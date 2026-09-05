@@ -11,7 +11,8 @@ import SwiftUI
 struct SquaredApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            // TODO: switch to `.live` once the real backend exists.
+            RootView(dependencies: .mock)
         }
     }
 }
