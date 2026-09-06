@@ -3,6 +3,7 @@
 //  Squared
 //
 
+import AuthenticationServices
 import SwiftUI
 
 struct SignInView: View {
@@ -15,48 +16,62 @@ struct SignInView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
-            Text("Squared")
-                .font(.largeTitle.bold())
+        // Fixed-height block, centered via the outer .frame(maxHeight: .infinity).
+        VStack(spacing: 0) {
+            Image("SquaredApplogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 156, height: 156)
 
-            TextField("Email", text: $viewModel.email)
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
-                .textFieldStyle(.roundedBorder)
-
-            SecureField("Password", text: $viewModel.password)
-                .textContentType(.password)
-                .textFieldStyle(.roundedBorder)
+            Text("Get squared up.")
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.6))
+                // Nudged right to align with the logo's optical center.
+                .offset(x: 8)
+                .padding(.top, 16)
 
             if let errorMessage = viewModel.errorMessage {
                 Text(errorMessage)
                     .font(.footnote)
                     .foregroundStyle(.red)
+                    .padding(.top, 16)
             }
 
-            // Spinner belongs on the button itself — it reflects an in-flight
-            // action the user just triggered, not data loading.
-            Button {
+            // Native button — no custom spinner; disable instead while signing in.
+            SignInWithAppleButton(.signIn) { request in
+                request.requestedScopes = [.fullName, .email]
+            } onCompletion: { result in
                 Task {
-                    if let user = await viewModel.signIn() {
+                    if let user = await viewModel.handleAuthorization(result) {
                         onSignedIn(user)
                     }
                 }
-            } label: {
-                if viewModel.isSigningIn {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                } else {
-                    Text("Sign In")
-                        .frame(maxWidth: .infinity)
-                }
             }
-            .buttonStyle(.borderedProminent)
+            .signInWithAppleButtonStyle(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
             .disabled(viewModel.isSigningIn)
+            .padding(.top, 48)
+
+            Text("By continuing, you agree to our Terms of Service and Privacy Policy.")
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.5))
+                .multilineTextAlignment(.center)
+                .padding(.top, 16)
+
+            #if DEBUG
+            // Guaranteed fallback if the real button's completion handler never fires.
+            Button("DEBUG: Skip Sign In") {
+                onSignedIn(MockData.currentUser)
+            }
+            .font(.caption2)
+            .foregroundStyle(.white.opacity(0.35))
+            .padding(.top, 20)
+            #endif
         }
-        .padding()
+        .padding(.horizontal, 20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color("AppBackground").ignoresSafeArea())
     }
 }
 

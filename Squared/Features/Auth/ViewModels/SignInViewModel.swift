@@ -3,17 +3,13 @@
 //  Squared
 //
 
+import AuthenticationServices
 import Foundation
 import Observation
 
-/// Sign-in has no data to read from `AppState` (the user isn't signed in yet),
-/// so this view model owns its own transient form state and calls `AuthServiceProtocol`
-/// directly. It does not touch `AppState` itself — `RootView` reads the returned
-/// `User` and drives the signedOut -> loading -> signedIn transition.
+/// Calls `AuthServiceProtocol` directly; doesn't touch `AppState` itself.
 @Observable
 final class SignInViewModel {
-    var email: String = ""
-    var password: String = ""
     private(set) var isSigningIn = false
     private(set) var errorMessage: String?
 
@@ -23,16 +19,46 @@ final class SignInViewModel {
         self.authService = authService
     }
 
-    func signIn() async -> User? {
+    func handleAuthorization(_ result: Result<ASAuthorization, Error>) async -> User? {
         isSigningIn = true
         errorMessage = nil
         defer { isSigningIn = false }
 
-        do {
-            return try await authService.signIn(email: email, password: password)
-        } catch {
+        switch result {
+        case .failure(let error):
+            // User-cancelled — not a real failure.
+            if (error as? ASAuthorizationError)?.code == .canceled {
+                return nil
+            }
+
+            #if DEBUG
+            // Free dev teams can't provision Sign In with Apple; continue with mock data.
+            return MockData.currentUser
+            #else
             errorMessage = error.localizedDescription
             return nil
+            #endif
+
+        case .success(let authorization):
+            guard
+                let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                let tokenData = credential.identityToken,
+                let identityToken = String(data: tokenData, encoding: .utf8)
+            else {
+                errorMessage = "Unable to sign in with Apple."
+                return nil
+            }
+
+            do {
+                return try await authService.signInWithApple(
+                    userIdentifier: credential.user,
+                    identityToken: identityToken,
+                    fullName: credential.fullName
+                )
+            } catch {
+                errorMessage = error.localizedDescription
+                return nil
+            }
         }
     }
 }

@@ -5,9 +5,7 @@
 
 import Foundation
 
-/// Concrete `AuthServiceProtocol` implementation. Depends on `APIClient` via
-/// constructor injection so it can run against either `URLSessionAPIClient`
-/// or `MockAPIClient` without changing a single line here.
+/// Concrete `AuthServiceProtocol` implementation.
 final class AuthService: AuthServiceProtocol {
     private let apiClient: APIClient
 
@@ -15,8 +13,13 @@ final class AuthService: AuthServiceProtocol {
         self.apiClient = apiClient
     }
 
-    func signIn(email: String, password: String) async throws -> User {
-        let requestBody = SignInRequest(email: email, password: password)
+    func signInWithApple(userIdentifier: String, identityToken: String, fullName: PersonNameComponents?) async throws -> User {
+        let requestBody = SignInWithAppleRequest(
+            userIdentifier: userIdentifier,
+            identityToken: identityToken,
+            givenName: fullName?.givenName,
+            familyName: fullName?.familyName
+        )
         let body = try JSONEncoder().encode(requestBody)
         let endpoint = Endpoint(path: "/auth/sign-in", method: .post, body: body)
         return try await apiClient.request(endpoint)
@@ -33,7 +36,9 @@ final class AuthService: AuthServiceProtocol {
     }
 }
 
-private struct SignInRequest: Encodable {
-    let email: String
-    let password: String
+private struct SignInWithAppleRequest: Encodable {
+    let userIdentifier: String
+    let identityToken: String
+    let givenName: String?
+    let familyName: String?
 }

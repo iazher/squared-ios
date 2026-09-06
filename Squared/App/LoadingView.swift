@@ -5,17 +5,17 @@
 
 import SwiftUI
 
-/// Shown only between a successful sign-in and the main TabView, while
-/// `AppState` performs its one-time initial fetch. This is the single
-/// exception to the "no spinners for AppState data" rule — every other
-/// screen assumes that data is already available by the time it appears.
+/// Shown only between a successful sign-in and the main TabView.
 struct LoadingView: View {
     var body: some View {
         VStack(spacing: 16) {
             ProgressView()
+                .tint(.white)
             Text("Setting things up…")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.white.opacity(0.6))
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color("AppBackground").ignoresSafeArea())
     }
 }
 
