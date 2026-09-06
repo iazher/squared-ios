@@ -6,10 +6,7 @@
 import Foundation
 import Observation
 
-/// Reads shared balance data from `AppState` (already populated during the
-/// post-sign-in initial fetch) filtered down to a single group. Recording a
-/// settlement is a mutation, so that goes straight through `SettlementServiceProtocol`
-/// and the result is written back into `AppState` afterwards.
+/// Reads this group's balances from `AppState`; settlements go through the service.
 @Observable
 final class SettlementViewModel {
     private let appState: AppState

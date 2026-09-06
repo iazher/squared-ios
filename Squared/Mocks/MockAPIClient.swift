@@ -5,10 +5,7 @@
 
 import Foundation
 
-/// Stands in for `URLSessionAPIClient` before the real backend exists. Routes
-/// on path + method the same way `URLSessionAPIClient` would, but returns
-/// hardcoded sample data instead of making a network call — so the app is
-/// buildable and testable end-to-end from day one.
+/// Stands in for `URLSessionAPIClient` before the real backend exists.
 final class MockAPIClient: APIClient {
     func request<T: Decodable>(_ endpoint: Endpoint) async throws -> T {
         let sample: Any

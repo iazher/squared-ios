@@ -5,10 +5,7 @@
 
 import Foundation
 
-/// Wires concrete Service implementations to an `APIClient`. Swap `.mock` for
-/// `.live` in `SquaredApp` once the real backend exists — nothing else in the
-/// app needs to change, since every feature depends on the `*ServiceProtocol`
-/// abstractions rather than these concrete types.
+/// Wires concrete Service implementations to an `APIClient`.
 struct AppDependencies {
     let apiClient: APIClient
     let authService: AuthServiceProtocol

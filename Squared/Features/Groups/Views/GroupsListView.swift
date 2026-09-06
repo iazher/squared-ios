@@ -20,8 +20,7 @@ struct GroupsListView: View {
 
     var body: some View {
         NavigationStack {
-            // `viewModel.groups` reads straight from AppState — no spinner here,
-            // the data was already fetched during the post-sign-in loading state.
+            // Reads straight from AppState — no spinner, no per-screen fetch.
             List(viewModel.groups) { group in
                 NavigationLink(value: group) {
                     Text(group.name)

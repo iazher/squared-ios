@@ -6,11 +6,7 @@
 import Foundation
 import Observation
 
-/// Reads shared group data from `AppState` instead of fetching it independently —
-/// `AppState` already populated `groups` during the post-sign-in initial fetch.
-/// This view model only talks to `GroupsServiceProtocol` for the mutation
-/// (creating a group), then writes the result back into `AppState` so every
-/// screen observing `groups` stays in sync.
+/// Reads groups from `AppState`; only calls the service for mutations.
 @Observable
 final class GroupsListViewModel {
     private let appState: AppState

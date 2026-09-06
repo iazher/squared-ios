@@ -3,9 +3,7 @@
 //  Squared
 //
 
-/// Owned by the Settings feature. Not part of `AppState` — unlike currentUser,
-/// groups, expenses, and balances, preferences aren't read by other features,
-/// so there's no cross-feature reason to centralize them.
+/// Owned by the Settings feature; intentionally not part of `AppState`.
 struct UserPreferences: Codable, Equatable {
     var preferredCurrencyCode: String
     var notificationsEnabled: Bool

@@ -5,8 +5,7 @@
 
 import SwiftUI
 
-/// The signed-in shell. Composes each feature's root view, handing down
-/// `AppState` and the Services those features need for mutations.
+/// The signed-in shell.
 struct MainTabView: View {
     let appState: AppState
     let dependencies: AppDependencies

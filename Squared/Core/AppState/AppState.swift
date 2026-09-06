@@ -5,11 +5,7 @@
 
 import Observation
 
-/// The single source of truth for shared, cross-feature data. Screens read from
-/// this store reactively instead of each ViewModel independently fetching its
-/// own copy — `AppState` owns *when* and *how* that data is fetched, feature
-/// ViewModels only read it and call Services directly for mutations, then write
-/// the result back here via the `upsert`/`set` methods below.
+/// The single source of truth for shared, cross-feature data.
 @Observable
 final class AppState {
     private(set) var currentUser: User?
@@ -17,9 +13,7 @@ final class AppState {
     private(set) var expenses: [Expense] = []
     private(set) var balances: [Balance] = []
 
-    /// True only while the one-time post-sign-in fetch is running. `RootView`
-    /// uses this to decide when to leave the `.loading` state — it is not meant
-    /// to drive any other spinner in the app.
+    /// True only while the one-time post-sign-in fetch is running.
     private(set) var isPerformingInitialFetch = false
 
     private let authService: AuthServiceProtocol
@@ -41,9 +35,7 @@ final class AppState {
 
     // MARK: - Initial fetch
 
-    /// Called once by `RootView` after a successful sign-in, while it shows
-    /// `LoadingView`. Populates every piece of shared state up front so no
-    /// individual screen needs to fetch its own data on appear.
+    /// Called once by `RootView` after a successful sign-in.
     func performInitialFetch() async {
         isPerformingInitialFetch = true
         defer { isPerformingInitialFetch = false }
@@ -68,10 +60,6 @@ final class AppState {
     }
 
     // MARK: - Mutation sync points
-    //
-    // ViewModels call a feature Service directly to perform a mutation (create
-    // a group, add an expense, record a payment), then call one of these so
-    // every screen reading the affected collection stays in sync.
 
     func upsert(group: Group) {
         if let index = groups.firstIndex(where: { $0.id == group.id }) {
@@ -94,7 +82,6 @@ final class AppState {
     }
 
     // MARK: - Placeholder fetches
-    //
     // TODO: these currently just delegate to the injected Services. Fill in
     // any additional composition/error-handling logic as the real backend
     // contract is defined.

@@ -25,9 +25,7 @@ struct SettingsView: View {
                     }
                 }
 
-                // Preferences are the one per-screen fetch in the app (they aren't
-                // shared AppState data), so the fields are simply disabled until
-                // loaded rather than showing a spinner, per the activity-indicator rule.
+                // One per-screen fetch exception — disabled until loaded, no spinner.
                 Section("Preferences") {
                     if let preferences = viewModel.preferences {
                         Text("Currency: \(preferences.preferredCurrencyCode)")

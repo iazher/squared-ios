@@ -5,8 +5,7 @@
 
 import Foundation
 
-/// Concrete `APIClient` backed by `URLSession`. This is the client used against
-/// the real backend; `MockAPIClient` stands in for it until that backend exists.
+/// Concrete `APIClient` backed by `URLSession`.
 final class URLSessionAPIClient: APIClient {
     private let baseURL: URL
     private let session: URLSession

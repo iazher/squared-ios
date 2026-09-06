@@ -5,9 +5,7 @@
 
 import Observation
 
-/// Reads shared expense data from `AppState` (already populated during the
-/// post-sign-in initial fetch) filtered down to a single group, rather than
-/// fetching that group's expenses independently.
+/// Reads this group's expenses from `AppState` rather than fetching independently.
 @Observable
 final class ExpensesListViewModel {
     private let appState: AppState

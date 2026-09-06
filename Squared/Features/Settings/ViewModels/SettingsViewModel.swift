@@ -6,10 +6,7 @@
 import Foundation
 import Observation
 
-/// Preferences aren't cross-feature shared state, so this is the one place a
-/// per-screen fetch is appropriate rather than a violation of the AppState rule.
-/// Sign-out, however, mutates shared state (`AppState.currentUser`), so it goes
-/// through `AppState.reset()` after the service call succeeds.
+/// Preferences are fetched per-screen (not AppState data); sign-out resets AppState.
 @Observable
 final class SettingsViewModel {
     private let appState: AppState

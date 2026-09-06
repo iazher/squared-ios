@@ -5,8 +5,7 @@
 
 import Foundation
 
-/// Owned by the Groups feature. Referenced directly (same module, no import needed)
-/// by Expenses and Settlement wherever a group needs to be identified.
+/// Owned by the Groups feature.
 struct Group: Identifiable, Codable, Hashable {
     let id: String
     let name: String
