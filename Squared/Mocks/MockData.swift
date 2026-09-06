@@ -5,8 +5,7 @@
 
 import Foundation
 
-/// Hardcoded sample data used by `MockAPIClient` so the app can be built and
-/// exercised end-to-end before the real backend exists.
+/// Hardcoded sample data used by `MockAPIClient`.
 enum MockData {
     static let currentUser = User(
         id: "user-1",
@@ -22,15 +21,23 @@ enum MockData {
         avatarURL: nil
     )
 
+    static let thirdUser = User(
+        id: "user-3",
+        name: "Jordan Lee",
+        email: "jordan@example.com",
+        avatarURL: nil
+    )
+
     static let groups: [Group] = [
         Group(
             id: "group-1",
             name: "Trip to Lisbon",
-            memberIDs: [currentUser.id, otherUser.id],
+            memberIDs: [currentUser.id, otherUser.id, thirdUser.id],
             createdAt: Date(timeIntervalSinceNow: -86_400 * 10)
         )
     ]
 
+    // Covers all three split methods.
     static let expenses: [Expense] = [
         Expense(
             id: "expense-1",
@@ -38,8 +45,56 @@ enum MockData {
             title: "Hotel",
             amount: 240.00,
             paidByUserID: currentUser.id,
-            splitBetweenUserIDs: [currentUser.id, otherUser.id],
+            splitMethod: .equal,
+            splits: [
+                ExpenseSplit(userID: currentUser.id, amount: 80.00),
+                ExpenseSplit(userID: otherUser.id, amount: 80.00),
+                ExpenseSplit(userID: thirdUser.id, amount: 80.00)
+            ],
             createdAt: Date(timeIntervalSinceNow: -86_400 * 9)
+        ),
+        Expense(
+            id: "expense-2",
+            groupID: groups[0].id,
+            title: "Dinner",
+            amount: 96.00,
+            paidByUserID: otherUser.id,
+            splitMethod: .exact,
+            splits: [
+                ExpenseSplit(userID: currentUser.id, amount: 40.00),
+                ExpenseSplit(userID: otherUser.id, amount: 36.00),
+                ExpenseSplit(userID: thirdUser.id, amount: 20.00)
+            ],
+            createdAt: Date(timeIntervalSinceNow: -86_400 * 7)
+        ),
+        Expense(
+            id: "expense-3",
+            groupID: groups[0].id,
+            title: "Taxi",
+            amount: 45.00,
+            paidByUserID: thirdUser.id,
+            splitMethod: .percentage,
+            // 50% / 30% / 20% of $45, resolved to exact dollar amounts.
+            splits: [
+                ExpenseSplit(userID: currentUser.id, amount: 22.50),
+                ExpenseSplit(userID: otherUser.id, amount: 13.50),
+                ExpenseSplit(userID: thirdUser.id, amount: 9.00)
+            ],
+            createdAt: Date(timeIntervalSinceNow: -86_400 * 5)
+        ),
+        Expense(
+            id: "expense-4",
+            groupID: groups[0].id,
+            title: "Groceries",
+            amount: 60.00,
+            paidByUserID: currentUser.id,
+            splitMethod: .equal,
+            // Only two of the three members were involved in this one.
+            splits: [
+                ExpenseSplit(userID: currentUser.id, amount: 30.00),
+                ExpenseSplit(userID: otherUser.id, amount: 30.00)
+            ],
+            createdAt: Date(timeIntervalSinceNow: -86_400 * 2)
         )
     ]
 
@@ -48,7 +103,13 @@ enum MockData {
             groupID: groups[0].id,
             fromUserID: otherUser.id,
             toUserID: currentUser.id,
-            amount: 120.00
+            amount: 70.00
+        ),
+        Balance(
+            groupID: groups[0].id,
+            fromUserID: thirdUser.id,
+            toUserID: currentUser.id,
+            amount: 96.50
         )
     ]
 
@@ -57,7 +118,7 @@ enum MockData {
         groupID: groups[0].id,
         fromUserID: otherUser.id,
         toUserID: currentUser.id,
-        amount: 120.00,
+        amount: 70.00,
         settledAt: Date(timeIntervalSinceNow: -86_400)
     )
 

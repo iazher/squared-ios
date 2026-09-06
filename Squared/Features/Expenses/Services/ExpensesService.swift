@@ -17,13 +17,14 @@ final class ExpensesService: ExpensesServiceProtocol {
         return try await apiClient.request(endpoint)
     }
 
-    func createExpense(groupID: String, title: String, amount: Decimal, paidByUserID: String, splitBetweenUserIDs: [String]) async throws -> Expense {
+    func createExpense(groupID: String, title: String, amount: Decimal, paidByUserID: String, splitMethod: SplitMethod, splits: [ExpenseSplit]) async throws -> Expense {
         let requestBody = CreateExpenseRequest(
             groupID: groupID,
             title: title,
             amount: amount,
             paidByUserID: paidByUserID,
-            splitBetweenUserIDs: splitBetweenUserIDs
+            splitMethod: splitMethod,
+            splits: splits
         )
         let body = try JSONEncoder().encode(requestBody)
         let endpoint = Endpoint(path: "/expenses", method: .post, body: body)
@@ -36,5 +37,6 @@ private struct CreateExpenseRequest: Encodable {
     let title: String
     let amount: Decimal
     let paidByUserID: String
-    let splitBetweenUserIDs: [String]
+    let splitMethod: SplitMethod
+    let splits: [ExpenseSplit]
 }

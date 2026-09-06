@@ -6,9 +6,7 @@
 import Foundation
 import Observation
 
-/// Creating an expense is a mutation, not a read of shared state, so this view
-/// model calls `ExpensesServiceProtocol` directly. On success it writes the new
-/// expense back into `AppState` so every screen reading `expenses` stays in sync.
+/// Calls `ExpensesServiceProtocol` directly, then writes the result into `AppState`.
 @Observable
 final class AddExpenseViewModel {
     private let appState: AppState
@@ -37,12 +35,15 @@ final class AddExpenseViewModel {
         defer { isSaving = false }
 
         do {
+            // No split editor yet — defaults to an equal split across the group.
+            let splits = Self.equalSplits(of: amount, among: group.memberIDs)
             let expense = try await expensesService.createExpense(
                 groupID: group.id,
                 title: title,
                 amount: amount,
                 paidByUserID: currentUser.id,
-                splitBetweenUserIDs: group.memberIDs
+                splitMethod: .equal,
+                splits: splits
             )
             appState.upsert(expense: expense)
             return true
@@ -50,5 +51,20 @@ final class AddExpenseViewModel {
             errorMessage = error.localizedDescription
             return false
         }
+    }
+
+    private static func equalSplits(of amount: Decimal, among memberIDs: [String]) -> [ExpenseSplit] {
+        guard !memberIDs.isEmpty else { return [] }
+        let share = (amount / Decimal(memberIDs.count)).rounded(to: 2)
+        return memberIDs.map { ExpenseSplit(userID: $0, amount: share) }
+    }
+}
+
+private extension Decimal {
+    func rounded(to scale: Int) -> Decimal {
+        var result = Decimal()
+        var value = self
+        NSDecimalRound(&result, &value, scale, .plain)
+        return result
     }
 }
