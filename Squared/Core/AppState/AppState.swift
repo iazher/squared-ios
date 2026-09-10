@@ -77,6 +77,10 @@ final class AppState {
         }
     }
 
+    func setGroups(_ groups: [Group]) {
+        self.groups = groups
+    }
+
     func setBalances(_ balances: [Balance]) {
         self.balances = balances
     }

@@ -34,6 +34,13 @@ enum MockData {
             name: "Trip to Lisbon",
             memberIDs: [currentUser.id, otherUser.id, thirdUser.id],
             createdAt: Date(timeIntervalSinceNow: -86_400 * 10)
+        ),
+        // Current user owes here (net negative) — exercises the "owes" red path.
+        Group(
+            id: "group-2",
+            name: "Apartment — SF",
+            memberIDs: [currentUser.id, otherUser.id],
+            createdAt: Date(timeIntervalSinceNow: -86_400 * 20)
         )
     ]
 
@@ -95,6 +102,19 @@ enum MockData {
                 ExpenseSplit(userID: otherUser.id, amount: 30.00)
             ],
             createdAt: Date(timeIntervalSinceNow: -86_400 * 2)
+        ),
+        Expense(
+            id: "expense-5",
+            groupID: groups[1].id,
+            title: "Wifi Bill",
+            amount: 90.00,
+            paidByUserID: otherUser.id,
+            splitMethod: .equal,
+            splits: [
+                ExpenseSplit(userID: currentUser.id, amount: 45.00),
+                ExpenseSplit(userID: otherUser.id, amount: 45.00)
+            ],
+            createdAt: Date(timeIntervalSinceNow: -86_400 * 3)
         )
     ]
 
@@ -110,6 +130,12 @@ enum MockData {
             fromUserID: thirdUser.id,
             toUserID: currentUser.id,
             amount: 96.50
+        ),
+        Balance(
+            groupID: groups[1].id,
+            fromUserID: currentUser.id,
+            toUserID: otherUser.id,
+            amount: 45.00
         )
     ]
 
