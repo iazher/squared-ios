@@ -10,10 +10,7 @@ import Testing
 
 struct SquaredTests {
 
-    /// Exercises the exact path `RootView` relies on after a successful
-    /// sign-in: `AppState.performInitialFetch()` against the mock service
-    /// stack. If this silently failed to populate state, or hung, or threw,
-    /// the loading -> signedIn transition would never fire in the real app.
+    /// Exercises the exact path `RootView` relies on: `AppState.performInitialFetch()`.
     @Test func performInitialFetchPopulatesAppState() async throws {
         let apiClient = MockAPIClient()
         let appState = AppState(
