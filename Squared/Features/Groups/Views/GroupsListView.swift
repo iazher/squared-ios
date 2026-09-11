@@ -9,13 +9,16 @@ struct GroupsListView: View {
     @State private var viewModel: GroupsListViewModel
     // Driven manually (not NavigationLink) so the chevron stays inside GroupRow's card.
     @State private var path: [Group] = []
+    @State private var isShowingAddGroup = false
     private let appState: AppState
+    private let groupsService: GroupsServiceProtocol
     private let expensesService: ExpensesServiceProtocol
     private let settlementService: SettlementServiceProtocol
 
     init(appState: AppState, groupsService: GroupsServiceProtocol, expensesService: ExpensesServiceProtocol, settlementService: SettlementServiceProtocol) {
         _viewModel = State(initialValue: GroupsListViewModel(appState: appState, groupsService: groupsService, settlementService: settlementService))
         self.appState = appState
+        self.groupsService = groupsService
         self.expensesService = expensesService
         self.settlementService = settlementService
     }
@@ -48,15 +51,20 @@ struct GroupsListView: View {
             .navigationTitle("Groups")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    // TODO: full create-group flow is a stretch goal.
+                    // TODO: member invite/picker flow is a separate, later feature (Group detail).
                     Button {
+                        isShowingAddGroup = true
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityLabel("Add Group")
                 }
             }
             .navigationDestination(for: Group.self) { group in
                 GroupDetailView(appState: appState, group: group, expensesService: expensesService, settlementService: settlementService)
+            }
+            .sheet(isPresented: $isShowingAddGroup) {
+                AddGroupView(appState: appState, groupsService: groupsService)
             }
             .refreshable {
                 await viewModel.refresh()
@@ -103,7 +111,7 @@ private struct GroupRow: View {
                 Text(group.name)
                     .font(.headline)
                     .foregroundStyle(.white)
-                Text("\(group.memberIDs.count) people")
+                Text("\(group.memberIDs.count) \(group.memberIDs.count == 1 ? "person" : "people")")
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.5))
             }

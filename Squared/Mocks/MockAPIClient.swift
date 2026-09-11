@@ -18,7 +18,12 @@ final class MockAPIClient: APIClient {
         case (.get, "/groups"):
             sample = MockData.groups
         case (.post, "/groups"):
-            sample = MockData.groups[0]
+            if let body = endpoint.body,
+               let payload = try? JSONDecoder().decode(GroupCreationPayload.self, from: body) {
+                sample = Group(id: UUID().uuidString, name: payload.name, memberIDs: payload.memberIDs, createdAt: Date())
+            } else {
+                sample = MockData.groups[0]
+            }
         case (.get, "/expenses"):
             sample = MockData.expenses
         case (.post, "/expenses"):
@@ -38,4 +43,9 @@ final class MockAPIClient: APIClient {
         }
         return typed
     }
+}
+
+private struct GroupCreationPayload: Decodable {
+    let name: String
+    let memberIDs: [String]
 }

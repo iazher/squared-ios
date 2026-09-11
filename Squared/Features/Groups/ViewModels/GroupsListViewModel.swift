@@ -13,17 +13,15 @@ final class GroupsListViewModel {
     private let groupsService: GroupsServiceProtocol
     private let settlementService: SettlementServiceProtocol
 
-    private(set) var isCreatingGroup = false
-    var errorMessage: String?
-
     init(appState: AppState, groupsService: GroupsServiceProtocol, settlementService: SettlementServiceProtocol) {
         self.appState = appState
         self.groupsService = groupsService
         self.settlementService = settlementService
     }
 
+    // Newest first, so a freshly created group appears at the top.
     var groups: [Group] {
-        appState.groups
+        appState.groups.sorted { $0.createdAt > $1.createdAt }
     }
 
     /// Positive means owed overall; negative means the user owes overall.
@@ -47,19 +45,6 @@ final class GroupsListViewModel {
             }
         }
         return total
-    }
-
-    func createGroup(name: String, memberIDs: [String]) async {
-        isCreatingGroup = true
-        errorMessage = nil
-        defer { isCreatingGroup = false }
-
-        do {
-            let group = try await groupsService.createGroup(name: name, memberIDs: memberIDs)
-            appState.upsert(group: group)
-        } catch {
-            errorMessage = error.localizedDescription
-        }
     }
 
     /// Pull-to-refresh — the sanctioned exception to reading only from `AppState`.
