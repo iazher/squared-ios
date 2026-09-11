@@ -51,7 +51,6 @@ struct GroupsListView: View {
             .navigationTitle("Groups")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    // TODO: member invite/picker flow is a separate, later feature (Group detail).
                     Button {
                         isShowingAddGroup = true
                     } label: {
@@ -61,7 +60,7 @@ struct GroupsListView: View {
                 }
             }
             .navigationDestination(for: Group.self) { group in
-                GroupDetailView(appState: appState, group: group, expensesService: expensesService, settlementService: settlementService)
+                GroupDetailView(appState: appState, group: group, groupsService: groupsService, expensesService: expensesService, settlementService: settlementService)
             }
             .sheet(isPresented: $isShowingAddGroup) {
                 AddGroupView(appState: appState, groupsService: groupsService)

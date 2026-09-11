@@ -9,6 +9,7 @@ import Foundation
 struct AppDependencies {
     let apiClient: APIClient
     let authService: AuthServiceProtocol
+    let usersService: UsersServiceProtocol
     let groupsService: GroupsServiceProtocol
     let expensesService: ExpensesServiceProtocol
     let settlementService: SettlementServiceProtocol
@@ -28,6 +29,7 @@ struct AppDependencies {
         AppDependencies(
             apiClient: apiClient,
             authService: AuthService(apiClient: apiClient),
+            usersService: UsersService(apiClient: apiClient),
             groupsService: GroupsService(apiClient: apiClient),
             expensesService: ExpensesService(apiClient: apiClient),
             settlementService: SettlementService(apiClient: apiClient),

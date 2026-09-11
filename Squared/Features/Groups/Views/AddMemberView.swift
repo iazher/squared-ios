@@ -1,31 +1,29 @@
 //
-//  AddExpenseView.swift
+//  AddMemberView.swift
 //  Squared
 //
 
 import SwiftUI
 
-struct AddExpenseView: View {
+struct AddMemberView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var viewModel: AddExpenseViewModel
+    @State private var viewModel: AddMemberViewModel
 
-    init(appState: AppState, group: Group, expensesService: ExpensesServiceProtocol) {
-        _viewModel = State(initialValue: AddExpenseViewModel(appState: appState, group: group, expensesService: expensesService))
+    init(appState: AppState, group: Group, groupsService: GroupsServiceProtocol) {
+        _viewModel = State(initialValue: AddMemberViewModel(appState: appState, group: group, groupsService: groupsService))
     }
 
     var body: some View {
         NavigationStack {
             Form {
-                TextField("Title", text: $viewModel.title)
-                TextField("Amount", text: $viewModel.amountText)
-                    .keyboardType(.decimalPad)
+                TextField("Member name", text: $viewModel.name)
 
                 if let errorMessage = viewModel.errorMessage {
                     Text(errorMessage)
                         .foregroundStyle(.red)
                 }
             }
-            .navigationTitle("Add Expense")
+            .navigationTitle("Add Member")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -37,18 +35,18 @@ struct AddExpenseView: View {
                     // Spinner reflects this in-flight save action — not a data load.
                     Button {
                         Task {
-                            if await viewModel.save() {
+                            if await viewModel.addMember() {
                                 dismiss()
                             }
                         }
                     } label: {
-                        if viewModel.isSaving {
+                        if viewModel.isAdding {
                             ProgressView()
                         } else {
-                            Text("Save")
+                            Text("Add")
                         }
                     }
-                    .disabled(viewModel.isSaving)
+                    .disabled(!viewModel.canAdd || viewModel.isAdding)
                 }
             }
         }

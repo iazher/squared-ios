@@ -28,11 +28,28 @@ enum MockData {
         avatarURL: nil
     )
 
+    static let fourthUser = User(
+        id: "user-4",
+        name: "Morgan Blake",
+        email: "morgan@example.com",
+        avatarURL: nil
+    )
+
+    static let fifthUser = User(
+        id: "user-5",
+        name: "Casey Nguyen",
+        email: "casey@example.com",
+        avatarURL: nil
+    )
+
+    static let users: [User] = [currentUser, otherUser, thirdUser, fourthUser, fifthUser]
+
     static let groups: [Group] = [
+        // Five members — exercises the avatar cluster's overflow ("+N") state.
         Group(
             id: "group-1",
             name: "Trip to Lisbon",
-            memberIDs: [currentUser.id, otherUser.id, thirdUser.id],
+            memberIDs: [currentUser.id, otherUser.id, thirdUser.id, fourthUser.id, fifthUser.id],
             createdAt: Date(timeIntervalSinceNow: -86_400 * 10)
         ),
         // Current user owes here (net negative) — exercises the "owes" red path.
@@ -102,6 +119,86 @@ enum MockData {
                 ExpenseSplit(userID: otherUser.id, amount: 30.00)
             ],
             createdAt: Date(timeIntervalSinceNow: -86_400 * 2)
+        ),
+        Expense(
+            id: "expense-6",
+            groupID: groups[0].id,
+            title: "Museum Tickets",
+            amount: 50.00,
+            paidByUserID: fourthUser.id,
+            splitMethod: .equal,
+            splits: [
+                ExpenseSplit(userID: currentUser.id, amount: 10.00),
+                ExpenseSplit(userID: otherUser.id, amount: 10.00),
+                ExpenseSplit(userID: thirdUser.id, amount: 10.00),
+                ExpenseSplit(userID: fourthUser.id, amount: 10.00),
+                ExpenseSplit(userID: fifthUser.id, amount: 10.00)
+            ],
+            createdAt: Date(timeIntervalSinceNow: -86_400 * 1)
+        ),
+        Expense(
+            id: "expense-7",
+            groupID: groups[0].id,
+            title: "Breakfast",
+            amount: 40.00,
+            paidByUserID: fifthUser.id,
+            splitMethod: .equal,
+            splits: [
+                ExpenseSplit(userID: currentUser.id, amount: 8.00),
+                ExpenseSplit(userID: otherUser.id, amount: 8.00),
+                ExpenseSplit(userID: thirdUser.id, amount: 8.00),
+                ExpenseSplit(userID: fourthUser.id, amount: 8.00),
+                ExpenseSplit(userID: fifthUser.id, amount: 8.00)
+            ],
+            createdAt: Date(timeIntervalSinceNow: -86_400 * 3)
+        ),
+        Expense(
+            id: "expense-8",
+            groupID: groups[0].id,
+            title: "Train Tickets",
+            amount: 150.00,
+            paidByUserID: currentUser.id,
+            splitMethod: .equal,
+            splits: [
+                ExpenseSplit(userID: currentUser.id, amount: 30.00),
+                ExpenseSplit(userID: otherUser.id, amount: 30.00),
+                ExpenseSplit(userID: thirdUser.id, amount: 30.00),
+                ExpenseSplit(userID: fourthUser.id, amount: 30.00),
+                ExpenseSplit(userID: fifthUser.id, amount: 30.00)
+            ],
+            createdAt: Date(timeIntervalSinceNow: -86_400 * 6)
+        ),
+        Expense(
+            id: "expense-9",
+            groupID: groups[0].id,
+            title: "Souvenirs",
+            amount: 75.00,
+            paidByUserID: otherUser.id,
+            splitMethod: .equal,
+            splits: [
+                ExpenseSplit(userID: currentUser.id, amount: 15.00),
+                ExpenseSplit(userID: otherUser.id, amount: 15.00),
+                ExpenseSplit(userID: thirdUser.id, amount: 15.00),
+                ExpenseSplit(userID: fourthUser.id, amount: 15.00),
+                ExpenseSplit(userID: fifthUser.id, amount: 15.00)
+            ],
+            createdAt: Date(timeIntervalSinceNow: -86_400 * 8)
+        ),
+        Expense(
+            id: "expense-10",
+            groupID: groups[0].id,
+            title: "Airport Transfer",
+            amount: 100.00,
+            paidByUserID: thirdUser.id,
+            splitMethod: .equal,
+            splits: [
+                ExpenseSplit(userID: currentUser.id, amount: 20.00),
+                ExpenseSplit(userID: otherUser.id, amount: 20.00),
+                ExpenseSplit(userID: thirdUser.id, amount: 20.00),
+                ExpenseSplit(userID: fourthUser.id, amount: 20.00),
+                ExpenseSplit(userID: fifthUser.id, amount: 20.00)
+            ],
+            createdAt: Date(timeIntervalSinceNow: -86_400 * 11)
         ),
         Expense(
             id: "expense-5",

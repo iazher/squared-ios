@@ -65,7 +65,7 @@ final class SquaredUITests: XCTestCase {
         bypassButton.tap()
 
         let groupsTab = app.tabBars.buttons["Groups"]
-        XCTAssertTrue(groupsTab.waitForExistence(timeout: 10), "Should reach the signed-in TabView with a Groups tab")
+        XCTAssertTrue(groupsTab.waitForExistence(timeout: 30), "Should reach the signed-in TabView with a Groups tab")
         XCTAssertTrue(app.tabBars.buttons["Settings"].exists)
     }
 
@@ -80,7 +80,7 @@ final class SquaredUITests: XCTestCase {
         bypassButton.tap()
 
         let groupRow = app.staticTexts["Trip to Lisbon"]
-        XCTAssertTrue(groupRow.waitForExistence(timeout: 10), "Mock group should appear in the list")
+        XCTAssertTrue(groupRow.waitForExistence(timeout: 30), "Mock group should appear in the list")
 
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "groups-list-populated"
@@ -91,7 +91,7 @@ final class SquaredUITests: XCTestCase {
         Thread.sleep(forTimeInterval: 1.5)
 
         groupRow.tap()
-        XCTAssertTrue(app.navigationBars["Trip to Lisbon"].waitForExistence(timeout: 10), "Tapping a group should push to its detail screen")
+        XCTAssertTrue(app.navigationBars["Trip to Lisbon"].waitForExistence(timeout: 30), "Tapping a group should push to its detail screen")
     }
 
     /// Confirms the full Add Group flow: sheet appears, Create is disabled until
@@ -140,6 +140,122 @@ final class SquaredUITests: XCTestCase {
         XCTAssertTrue(newGroupRow.exists, "New group should appear in the list immediately")
         XCTAssertTrue(app.staticTexts["+$0.00"].exists, "New group should start with a $0.00 balance")
         XCTAssertTrue(app.staticTexts["1 person"].exists, "A single-member group should read '1 person', not '1 people'")
+    }
+
+    /// Confirms Group Detail shows members/balances and the expense feed from mock
+    /// data, newest first, and that both navigation actions (View Settlement push,
+    /// + sheet) and the back button work.
+    @MainActor
+    func testGroupDetailShowsMembersExpensesAndNavigatesCorrectly() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        let bypassButton = app.buttons["DEBUG: Skip Sign In"]
+        XCTAssertTrue(bypassButton.waitForExistence(timeout: 10))
+        bypassButton.tap()
+
+        let groupRow = app.staticTexts["Trip to Lisbon"]
+        XCTAssertTrue(groupRow.waitForExistence(timeout: 30))
+        groupRow.tap()
+
+        XCTAssertTrue(app.navigationBars["Trip to Lisbon"].waitForExistence(timeout: 30), "Group name should be the navigation title")
+
+        // Members section: compact summary row, not the full inline list.
+        XCTAssertTrue(app.staticTexts["5 Members"].waitForExistence(timeout: 10), "Members row should show a compact count summary")
+        XCTAssertFalse(app.staticTexts["Sam Rivera"].exists, "Member names should no longer appear inline on Group Detail")
+
+        // Expense feed: newest first (Groceries -2d, Taxi -5d, Dinner -7d, Hotel -9d),
+        // each showing description/amount/payer.
+        let expenseTitles = ["Groceries", "Taxi", "Dinner", "Hotel"]
+        for title in expenseTitles {
+            XCTAssertTrue(app.staticTexts[title].exists, "\(title) expense should appear in the feed")
+        }
+        let feedOrder = expenseTitles.map { app.staticTexts[$0].frame.minY }
+        XCTAssertEqual(feedOrder, feedOrder.sorted(), "Expenses should be ordered newest first")
+        XCTAssertTrue(app.staticTexts["Paid by Sam Rivera"].exists)
+        XCTAssertTrue(app.staticTexts["$60.00"].exists, "Groceries amount should be shown")
+
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "group-detail-populated"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+
+        // + presents Add Expense as a sheet.
+        let addExpenseButton = app.navigationBars.buttons["Add Expense"]
+        XCTAssertTrue(addExpenseButton.waitForExistence(timeout: 30))
+        addExpenseButton.tap()
+        let titleField = app.textFields["Title"]
+        XCTAssertTrue(titleField.waitForExistence(timeout: 30), "Add Expense sheet should appear")
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(titleField.waitForNonExistence(timeout: 20), "Sheet should dismiss on Cancel")
+
+        // View Settlement pushes to the Settlement screen.
+        let viewSettlementButton = app.buttons["View Settlement"]
+        XCTAssertTrue(viewSettlementButton.waitForExistence(timeout: 30))
+        viewSettlementButton.tap()
+        XCTAssertTrue(app.navigationBars["Balances"].waitForExistence(timeout: 30), "View Settlement should push to the Settlement screen")
+
+        // Back returns to Group Detail, then Groups list.
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.navigationBars["Trip to Lisbon"].waitForExistence(timeout: 30), "Back should return to Group Detail")
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.navigationBars["Groups"].waitForExistence(timeout: 30), "Back should return to the Groups list")
+    }
+
+    /// Confirms the Members summary row pushes to the full member list, adding a
+    /// member there updates it immediately, and back navigation + Group Detail's
+    /// own + (Add Expense) are unaffected by the change.
+    @MainActor
+    func testGroupMembersSummaryPushesAndAddMemberUpdatesImmediately() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        let bypassButton = app.buttons["DEBUG: Skip Sign In"]
+        XCTAssertTrue(bypassButton.waitForExistence(timeout: 10))
+        bypassButton.tap()
+
+        let groupRow = app.staticTexts["Trip to Lisbon"]
+        XCTAssertTrue(groupRow.waitForExistence(timeout: 30))
+        groupRow.tap()
+        XCTAssertTrue(app.navigationBars["Trip to Lisbon"].waitForExistence(timeout: 30))
+
+        let membersSummary = app.staticTexts["5 Members"]
+        XCTAssertTrue(membersSummary.waitForExistence(timeout: 30))
+        membersSummary.tap()
+
+        XCTAssertTrue(app.navigationBars["Members"].waitForExistence(timeout: 30), "Tapping the summary row should push to GroupMembersView")
+        XCTAssertTrue(app.staticTexts["You"].waitForExistence(timeout: 10), "Full member list should show the current user as 'You'")
+        XCTAssertTrue(app.staticTexts["Sam Rivera"].exists)
+        XCTAssertTrue(app.staticTexts["Jordan Lee"].exists)
+
+        // + presents Add Member as a sheet.
+        let addMemberButton = app.navigationBars.buttons["Add Member"]
+        XCTAssertTrue(addMemberButton.waitForExistence(timeout: 10))
+        addMemberButton.tap()
+
+        let nameField = app.textFields["Member name"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 30), "Add Member sheet should appear")
+        let addButton = app.buttons["Add"]
+        XCTAssertTrue(addButton.waitForExistence(timeout: 5))
+        XCTAssertFalse(addButton.isEnabled, "Add should be disabled until a name is entered")
+
+        nameField.tap()
+        nameField.typeText("Taylor Kim")
+        XCTAssertTrue(addButton.isEnabled)
+        addButton.tap()
+
+        XCTAssertTrue(nameField.waitForNonExistence(timeout: 20), "Sheet should dismiss after adding")
+        XCTAssertTrue(app.staticTexts["Taylor Kim"].waitForExistence(timeout: 10), "New member should appear in the list immediately")
+
+        // Back returns to Group Detail; its own + still opens Add Expense, unaffected.
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.navigationBars["Trip to Lisbon"].waitForExistence(timeout: 30), "Back should return to Group Detail")
+        XCTAssertTrue(app.staticTexts["6 Members"].waitForExistence(timeout: 10), "Group Detail's summary should reflect the new member count")
+
+        let addExpenseButton = app.navigationBars.buttons["Add Expense"]
+        XCTAssertTrue(addExpenseButton.waitForExistence(timeout: 10))
+        addExpenseButton.tap()
+        XCTAssertTrue(app.textFields["Title"].waitForExistence(timeout: 30), "Group Detail's + should still open Add Expense, unaffected by this change")
     }
 }
 

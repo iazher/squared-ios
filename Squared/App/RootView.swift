@@ -15,6 +15,7 @@ struct RootView: View {
         self.dependencies = dependencies
         _appState = State(initialValue: AppState(
             authService: dependencies.authService,
+            usersService: dependencies.usersService,
             groupsService: dependencies.groupsService,
             expensesService: dependencies.expensesService,
             settlementService: dependencies.settlementService

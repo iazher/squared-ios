@@ -9,6 +9,7 @@ import Observation
 @Observable
 final class AppState {
     private(set) var currentUser: User?
+    private(set) var users: [User] = []
     private(set) var groups: [Group] = []
     private(set) var expenses: [Expense] = []
     private(set) var balances: [Balance] = []
@@ -17,17 +18,20 @@ final class AppState {
     private(set) var isPerformingInitialFetch = false
 
     private let authService: AuthServiceProtocol
+    private let usersService: UsersServiceProtocol
     private let groupsService: GroupsServiceProtocol
     private let expensesService: ExpensesServiceProtocol
     private let settlementService: SettlementServiceProtocol
 
     init(
         authService: AuthServiceProtocol,
+        usersService: UsersServiceProtocol,
         groupsService: GroupsServiceProtocol,
         expensesService: ExpensesServiceProtocol,
         settlementService: SettlementServiceProtocol
     ) {
         self.authService = authService
+        self.usersService = usersService
         self.groupsService = groupsService
         self.expensesService = expensesService
         self.settlementService = settlementService
@@ -41,11 +45,13 @@ final class AppState {
         defer { isPerformingInitialFetch = false }
 
         async let fetchedUser = fetchCurrentUser()
+        async let fetchedUsers = fetchUsers()
         async let fetchedGroups = fetchGroups()
         async let fetchedExpenses = fetchExpenses()
         async let fetchedBalances = fetchBalances()
 
         currentUser = await fetchedUser
+        users = await fetchedUsers
         groups = await fetchedGroups
         expenses = await fetchedExpenses
         balances = await fetchedBalances
@@ -54,12 +60,21 @@ final class AppState {
     /// Called on sign-out to clear shared state before returning to `.signedOut`.
     func reset() {
         currentUser = nil
+        users = []
         groups = []
         expenses = []
         balances = []
     }
 
     // MARK: - Mutation sync points
+
+    func upsert(user: User) {
+        if let index = users.firstIndex(where: { $0.id == user.id }) {
+            users[index] = user
+        } else {
+            users.append(user)
+        }
+    }
 
     func upsert(group: Group) {
         if let index = groups.firstIndex(where: { $0.id == group.id }) {
@@ -92,6 +107,10 @@ final class AppState {
 
     private func fetchCurrentUser() async -> User? {
         try? await authService.fetchCurrentUser()
+    }
+
+    private func fetchUsers() async -> [User] {
+        (try? await usersService.fetchUsers()) ?? []
     }
 
     private func fetchGroups() async -> [Group] {

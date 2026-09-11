@@ -15,12 +15,14 @@ struct SquaredTests {
         let apiClient = MockAPIClient()
         let appState = AppState(
             authService: AuthService(apiClient: apiClient),
+            usersService: UsersService(apiClient: apiClient),
             groupsService: GroupsService(apiClient: apiClient),
             expensesService: ExpensesService(apiClient: apiClient),
             settlementService: SettlementService(apiClient: apiClient)
         )
 
         #expect(appState.currentUser == nil)
+        #expect(appState.users.isEmpty)
         #expect(appState.groups.isEmpty)
         #expect(appState.expenses.isEmpty)
         #expect(appState.balances.isEmpty)
@@ -30,6 +32,7 @@ struct SquaredTests {
 
         #expect(appState.isPerformingInitialFetch == false)
         #expect(appState.currentUser == MockData.currentUser)
+        #expect(appState.users == MockData.users)
         #expect(appState.groups == MockData.groups)
         #expect(appState.expenses == MockData.expenses)
         #expect(appState.balances == MockData.balances)
@@ -39,6 +42,7 @@ struct SquaredTests {
         let apiClient = MockAPIClient()
         let appState = AppState(
             authService: AuthService(apiClient: apiClient),
+            usersService: UsersService(apiClient: apiClient),
             groupsService: GroupsService(apiClient: apiClient),
             expensesService: ExpensesService(apiClient: apiClient),
             settlementService: SettlementService(apiClient: apiClient)
@@ -50,6 +54,7 @@ struct SquaredTests {
         appState.reset()
 
         #expect(appState.currentUser == nil)
+        #expect(appState.users.isEmpty)
         #expect(appState.groups.isEmpty)
         #expect(appState.expenses.isEmpty)
         #expect(appState.balances.isEmpty)

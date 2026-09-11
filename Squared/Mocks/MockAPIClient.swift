@@ -13,6 +13,8 @@ final class MockAPIClient: APIClient {
         switch (endpoint.method, endpoint.path) {
         case (.get, "/auth/me"), (.post, "/auth/sign-in"):
             sample = MockData.currentUser
+        case (.get, "/users"):
+            sample = MockData.users
         case (.post, "/auth/sign-out"):
             sample = EmptyResponse()
         case (.get, "/groups"):
@@ -34,6 +36,13 @@ final class MockAPIClient: APIClient {
             sample = MockData.settlement
         case (.get, "/settings/preferences"), (.put, "/settings/preferences"):
             sample = MockData.preferences
+        case let (.post, path) where path.hasPrefix("/groups/") && path.hasSuffix("/members"):
+            if let body = endpoint.body,
+               let payload = try? JSONDecoder().decode(AddMemberPayload.self, from: body) {
+                sample = User(id: UUID().uuidString, name: payload.name, email: "", avatarURL: nil)
+            } else {
+                throw NetworkError.invalidResponse
+            }
         default:
             throw NetworkError.invalidResponse
         }
@@ -48,4 +57,8 @@ final class MockAPIClient: APIClient {
 private struct GroupCreationPayload: Decodable {
     let name: String
     let memberIDs: [String]
+}
+
+private struct AddMemberPayload: Decodable {
+    let name: String
 }
