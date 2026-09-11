@@ -17,8 +17,7 @@ struct RootView: View {
             authService: dependencies.authService,
             usersService: dependencies.usersService,
             groupsService: dependencies.groupsService,
-            expensesService: dependencies.expensesService,
-            settlementService: dependencies.settlementService
+            expensesService: dependencies.expensesService
         ))
     }
 

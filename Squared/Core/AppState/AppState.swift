@@ -3,6 +3,7 @@
 //  Squared
 //
 
+import Foundation
 import Observation
 
 /// The single source of truth for shared, cross-feature data.
@@ -21,20 +22,17 @@ final class AppState {
     private let usersService: UsersServiceProtocol
     private let groupsService: GroupsServiceProtocol
     private let expensesService: ExpensesServiceProtocol
-    private let settlementService: SettlementServiceProtocol
 
     init(
         authService: AuthServiceProtocol,
         usersService: UsersServiceProtocol,
         groupsService: GroupsServiceProtocol,
-        expensesService: ExpensesServiceProtocol,
-        settlementService: SettlementServiceProtocol
+        expensesService: ExpensesServiceProtocol
     ) {
         self.authService = authService
         self.usersService = usersService
         self.groupsService = groupsService
         self.expensesService = expensesService
-        self.settlementService = settlementService
     }
 
     // MARK: - Initial fetch
@@ -48,13 +46,12 @@ final class AppState {
         async let fetchedUsers = fetchUsers()
         async let fetchedGroups = fetchGroups()
         async let fetchedExpenses = fetchExpenses()
-        async let fetchedBalances = fetchBalances()
 
         currentUser = await fetchedUser
         users = await fetchedUsers
         groups = await fetchedGroups
         expenses = await fetchedExpenses
-        balances = await fetchedBalances
+        recomputeBalances()
     }
 
     /// Called on sign-out to clear shared state before returning to `.signedOut`.
@@ -90,14 +87,51 @@ final class AppState {
         } else {
             expenses.append(expense)
         }
+        recomputeBalances()
     }
 
     func setGroups(_ groups: [Group]) {
         self.groups = groups
     }
 
-    func setBalances(_ balances: [Balance]) {
-        self.balances = balances
+    /// TEMPORARY mock-stage substitute for a real balances fetch: nets each
+    /// expense's splits against its payer, pairwise, per group. This is not
+    /// debt simplification (no multi-party reduction) — replace with a real
+    /// fetch once the backend's simplify_debts() endpoint exists.
+    func recomputeBalances() {
+        balances = Self.computeBalances(from: expenses)
+    }
+
+    private static func computeBalances(from expenses: [Expense]) -> [Balance] {
+        struct PairKey: Hashable {
+            let groupID: String
+            let lowUserID: String
+            let highUserID: String
+        }
+
+        // Positive means `highUserID` owes `lowUserID`; negative means the reverse.
+        var net: [PairKey: Decimal] = [:]
+
+        for expense in expenses {
+            for split in expense.splits where split.userID != expense.paidByUserID {
+                let debtor = split.userID
+                let creditor = expense.paidByUserID
+                let low = min(debtor, creditor)
+                let high = max(debtor, creditor)
+                let key = PairKey(groupID: expense.groupID, lowUserID: low, highUserID: high)
+                let delta = debtor == high ? split.amount : -split.amount
+                net[key, default: .zero] += delta
+            }
+        }
+
+        return net.compactMap { key, amount in
+            guard amount != 0 else { return nil }
+            if amount > 0 {
+                return Balance(groupID: key.groupID, fromUserID: key.highUserID, toUserID: key.lowUserID, amount: amount)
+            } else {
+                return Balance(groupID: key.groupID, fromUserID: key.lowUserID, toUserID: key.highUserID, amount: -amount)
+            }
+        }
     }
 
     // MARK: - Placeholder fetches
@@ -119,9 +153,5 @@ final class AppState {
 
     private func fetchExpenses() async -> [Expense] {
         (try? await expensesService.fetchExpenses()) ?? []
-    }
-
-    private func fetchBalances() async -> [Balance] {
-        (try? await settlementService.fetchBalances()) ?? []
     }
 }

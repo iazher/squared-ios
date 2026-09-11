@@ -5,6 +5,7 @@
 //  Created by Iman Azher on 05/09/2026.
 //
 
+import Foundation
 import Testing
 @testable import Squared
 
@@ -17,8 +18,7 @@ struct SquaredTests {
             authService: AuthService(apiClient: apiClient),
             usersService: UsersService(apiClient: apiClient),
             groupsService: GroupsService(apiClient: apiClient),
-            expensesService: ExpensesService(apiClient: apiClient),
-            settlementService: SettlementService(apiClient: apiClient)
+            expensesService: ExpensesService(apiClient: apiClient)
         )
 
         #expect(appState.currentUser == nil)
@@ -35,7 +35,17 @@ struct SquaredTests {
         #expect(appState.users == MockData.users)
         #expect(appState.groups == MockData.groups)
         #expect(appState.expenses == MockData.expenses)
-        #expect(appState.balances == MockData.balances)
+        // Balances are now derived from expenses (temporary mock-stage calculation),
+        // not fetched — check the one easy-to-hand-verify case rather than reimplementing
+        // the netting logic here. "Apartment — SF" has a single $90 Wifi Bill paid by
+        // Sam Rivera, split evenly, so Alex owes Sam exactly $45.
+        let apartmentWifiDebt = Balance(
+            groupID: MockData.groups[1].id,
+            fromUserID: MockData.currentUser.id,
+            toUserID: MockData.otherUser.id,
+            amount: 45.00
+        )
+        #expect(appState.balances.contains(apartmentWifiDebt))
     }
 
     @Test func resetClearsAppState() async throws {
@@ -44,8 +54,7 @@ struct SquaredTests {
             authService: AuthService(apiClient: apiClient),
             usersService: UsersService(apiClient: apiClient),
             groupsService: GroupsService(apiClient: apiClient),
-            expensesService: ExpensesService(apiClient: apiClient),
-            settlementService: SettlementService(apiClient: apiClient)
+            expensesService: ExpensesService(apiClient: apiClient)
         )
 
         await appState.performInitialFetch()

@@ -11,12 +11,10 @@ import Observation
 final class GroupsListViewModel {
     private let appState: AppState
     private let groupsService: GroupsServiceProtocol
-    private let settlementService: SettlementServiceProtocol
 
-    init(appState: AppState, groupsService: GroupsServiceProtocol, settlementService: SettlementServiceProtocol) {
+    init(appState: AppState, groupsService: GroupsServiceProtocol) {
         self.appState = appState
         self.groupsService = groupsService
-        self.settlementService = settlementService
     }
 
     // Newest first, so a freshly created group appears at the top.
@@ -51,14 +49,11 @@ final class GroupsListViewModel {
     func refresh() async {
         try? await Task.sleep(nanoseconds: 700_000_000)
 
-        async let fetchedGroups = try? groupsService.fetchGroups()
-        async let fetchedBalances = try? settlementService.fetchBalances()
-
-        if let groups = await fetchedGroups {
+        if let groups = try? await groupsService.fetchGroups() {
             appState.setGroups(groups)
         }
-        if let balances = await fetchedBalances {
-            appState.setBalances(balances)
-        }
+        // Balances are derived from expenses (temporary mock-stage calculation);
+        // refreshing groups doesn't change expenses, but recompute for consistency.
+        appState.recomputeBalances()
     }
 }

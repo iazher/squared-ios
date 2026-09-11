@@ -38,8 +38,10 @@ final class SettlementViewModel {
                 toUserID: toUserID,
                 amount: amount
             )
-            let refreshedBalances = try await settlementService.fetchBalances()
-            appState.setBalances(refreshedBalances)
+            // TEMPORARY: balances are derived from expenses only right now, so
+            // recording a settlement doesn't yet move them — recompute anyway so
+            // this call site is correct once settlements factor into the real calculation.
+            appState.recomputeBalances()
         } catch {
             errorMessage = error.localizedDescription
         }

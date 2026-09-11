@@ -29,13 +29,46 @@ final class MockAPIClient: APIClient {
         case (.get, "/expenses"):
             sample = MockData.expenses
         case (.post, "/expenses"):
-            sample = MockData.expenses[0]
+            if let body = endpoint.body,
+               let payload = try? JSONDecoder().decode(CreateExpensePayload.self, from: body) {
+                sample = Expense(
+                    id: UUID().uuidString,
+                    groupID: payload.groupID,
+                    title: payload.title,
+                    amount: payload.amount,
+                    paidByUserID: payload.paidByUserID,
+                    splitMethod: payload.splitMethod,
+                    splits: payload.splits,
+                    createdAt: Date()
+                )
+            } else {
+                throw NetworkError.invalidResponse
+            }
         case (.get, "/settlement/balances"):
             sample = MockData.balances
         case (.post, "/settlement/settlements"):
-            sample = MockData.settlement
-        case (.get, "/settings/preferences"), (.put, "/settings/preferences"):
+            if let body = endpoint.body,
+               let payload = try? JSONDecoder().decode(RecordSettlementPayload.self, from: body) {
+                sample = Settlement(
+                    id: UUID().uuidString,
+                    groupID: payload.groupID,
+                    fromUserID: payload.fromUserID,
+                    toUserID: payload.toUserID,
+                    amount: payload.amount,
+                    settledAt: Date()
+                )
+            } else {
+                throw NetworkError.invalidResponse
+            }
+        case (.get, "/settings/preferences"):
             sample = MockData.preferences
+        case (.put, "/settings/preferences"):
+            if let body = endpoint.body,
+               let payload = try? JSONDecoder().decode(UserPreferences.self, from: body) {
+                sample = payload
+            } else {
+                throw NetworkError.invalidResponse
+            }
         case let (.post, path) where path.hasPrefix("/groups/") && path.hasSuffix("/members"):
             if let body = endpoint.body,
                let payload = try? JSONDecoder().decode(AddMemberPayload.self, from: body) {
@@ -61,4 +94,20 @@ private struct GroupCreationPayload: Decodable {
 
 private struct AddMemberPayload: Decodable {
     let name: String
+}
+
+private struct CreateExpensePayload: Decodable {
+    let groupID: String
+    let title: String
+    let amount: Decimal
+    let paidByUserID: String
+    let splitMethod: SplitMethod
+    let splits: [ExpenseSplit]
+}
+
+private struct RecordSettlementPayload: Decodable {
+    let groupID: String
+    let fromUserID: String
+    let toUserID: String
+    let amount: Decimal
 }

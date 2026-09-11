@@ -16,7 +16,7 @@ struct GroupsListView: View {
     private let settlementService: SettlementServiceProtocol
 
     init(appState: AppState, groupsService: GroupsServiceProtocol, expensesService: ExpensesServiceProtocol, settlementService: SettlementServiceProtocol) {
-        _viewModel = State(initialValue: GroupsListViewModel(appState: appState, groupsService: groupsService, settlementService: settlementService))
+        _viewModel = State(initialValue: GroupsListViewModel(appState: appState, groupsService: groupsService))
         self.appState = appState
         self.groupsService = groupsService
         self.expensesService = expensesService
