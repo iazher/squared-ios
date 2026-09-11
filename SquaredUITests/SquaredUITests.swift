@@ -202,6 +202,48 @@ final class SquaredUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Groups"].waitForExistence(timeout: 30), "Back should return to the Groups list")
     }
 
+    /// Confirms tapping an expense in Group Detail's feed pushes to ExpenseDetailView
+    /// with the correct payer, split method, and per-participant breakdown, and that
+    /// back returns to Group Detail.
+    @MainActor
+    func testExpenseRowPushesToDetailWithCorrectBreakdown() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        let bypassButton = app.buttons["DEBUG: Skip Sign In"]
+        XCTAssertTrue(bypassButton.waitForExistence(timeout: 10))
+        bypassButton.tap()
+
+        let groupRow = app.staticTexts["Trip to Lisbon"]
+        XCTAssertTrue(groupRow.waitForExistence(timeout: 30))
+        groupRow.tap()
+        XCTAssertTrue(app.navigationBars["Trip to Lisbon"].waitForExistence(timeout: 30))
+
+        // "Taxi" is a percentage-split expense (50% / 30% / 20% of $45), paid by Jordan Lee.
+        let taxiRow = app.staticTexts["Taxi"]
+        XCTAssertTrue(taxiRow.waitForExistence(timeout: 30))
+        taxiRow.tap()
+
+        XCTAssertTrue(app.navigationBars["Taxi"].waitForExistence(timeout: 30), "Tapping an expense should push to its detail screen")
+        XCTAssertTrue(app.staticTexts["$45.00"].exists, "Total amount should be shown")
+        XCTAssertTrue(app.staticTexts["Jordan Lee"].exists, "Payer should be shown")
+        XCTAssertTrue(app.staticTexts["Percentage"].exists, "Split method should be shown")
+
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "expense-detail-taxi"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+
+        XCTAssertTrue(app.staticTexts["You"].exists, "Current user's share should be shown")
+        XCTAssertTrue(app.staticTexts["$22.50"].exists)
+        XCTAssertTrue(app.staticTexts["Sam Rivera"].exists)
+        XCTAssertTrue(app.staticTexts["$13.50"].exists)
+        XCTAssertTrue(app.staticTexts["$9.00"].exists)
+
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.navigationBars["Trip to Lisbon"].waitForExistence(timeout: 30), "Back should return to Group Detail")
+    }
+
     /// Confirms the Members summary row pushes to the full member list, adding a
     /// member there updates it immediately, and back navigation + Group Detail's
     /// own + (Add Expense) are unaffected by the change.

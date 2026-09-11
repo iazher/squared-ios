@@ -10,6 +10,7 @@ struct GroupDetailView: View {
     @State private var isShowingAddExpense = false
     @State private var isShowingMembers = false
     @State private var isShowingSettlement = false
+    @State private var selectedExpense: Expense?
     private let appState: AppState
     private let group: Group
     private let groupsService: GroupsServiceProtocol
@@ -57,10 +58,15 @@ struct GroupDetailView: View {
                         .listRowSeparator(.hidden)
                 } else {
                     ForEach(viewModel.expenses) { expense in
-                        ExpenseRow(expense: expense, payerName: viewModel.payerName(for: expense))
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                        Button {
+                            selectedExpense = expense
+                        } label: {
+                            ExpenseRow(expense: expense, payerName: viewModel.payerName(for: expense))
+                        }
+                        .buttonStyle(.plain)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                     }
                 }
             }
@@ -87,6 +93,9 @@ struct GroupDetailView: View {
         }
         .navigationDestination(isPresented: $isShowingSettlement) {
             SettlementView(appState: appState, group: group, settlementService: settlementService)
+        }
+        .navigationDestination(item: $selectedExpense) { expense in
+            ExpenseDetailView(appState: appState, expense: expense)
         }
         // Pinned footer — reserves its own space so the list scrolls independently and stops short of it.
         .safeAreaInset(edge: .bottom) {
@@ -193,6 +202,10 @@ private struct ExpenseRow: View {
             Text(expense.amount.formatted(currencyCode: "USD"))
                 .font(.subheadline.bold())
                 .foregroundStyle(.white)
+
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.3))
         }
         .padding(12)
         .background(Color("CardSurface"))
