@@ -63,7 +63,7 @@ private struct MemberRow: View {
 
             Text(balanceText)
                 .font(.subheadline.bold())
-                .foregroundStyle(member.netBalance >= 0 ? Color("PositiveBalance") : .red)
+                .foregroundStyle(balanceColor)
         }
         .padding(12)
         .background(Color("CardSurface"))
@@ -72,9 +72,16 @@ private struct MemberRow: View {
 
     private var balanceText: String {
         if member.netBalance == 0 {
-            return "Settled up"
+            return member.hasActivity ? "Settled up" : "No expenses yet"
         }
         let formatted = abs(member.netBalance).formatted(currencyCode: "USD")
         return member.netBalance > 0 ? "+\(formatted)" : "-\(formatted)"
+    }
+
+    private var balanceColor: Color {
+        if member.netBalance == 0 {
+            return member.hasActivity ? Color("PositiveBalance") : .white.opacity(0.5)
+        }
+        return member.netBalance > 0 ? Color("PositiveBalance") : .red
     }
 }

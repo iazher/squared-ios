@@ -18,6 +18,9 @@ final class GroupMembersViewModel {
         let displayName: String
         let initials: String
         let netBalance: Decimal
+        /// Whether this member has any expense activity in this group — distinguishes
+        /// an actually-settled $0.00 from a new member with no history yet.
+        let hasActivity: Bool
     }
 
     init(appState: AppState, group: Group) {
@@ -32,7 +35,8 @@ final class GroupMembersViewModel {
                 id: memberID,
                 displayName: displayName(for: memberID),
                 initials: MemberAvatar.initials(from: actualName(for: memberID)),
-                netBalance: netBalance(for: memberID)
+                netBalance: netBalance(for: memberID),
+                hasActivity: hasActivity(for: memberID)
             )
         }
     }
@@ -65,5 +69,17 @@ final class GroupMembersViewModel {
             }
         }
         return total
+    }
+
+    private func hasActivity(for userID: String) -> Bool {
+        for expense in appState.expenses where expense.groupID == group.id {
+            if expense.paidByUserID == userID {
+                return true
+            }
+            if expense.splits.contains(where: { $0.userID == userID }) {
+                return true
+            }
+        }
+        return false
     }
 }
