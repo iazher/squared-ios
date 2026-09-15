@@ -299,6 +299,62 @@ final class SquaredUITests: XCTestCase {
         addExpenseButton.tap()
         XCTAssertTrue(app.textFields["Title"].waitForExistence(timeout: 30), "Group Detail's + should still open Add Expense, unaffected by this change")
     }
+
+    /// Confirms the Settlement graph screen: the raw/simplified toggle exists and
+    /// doesn't crash when switched, and tapping the graph's single edge (Apartment —
+    /// SF has exactly one: You owe Sam Rivera $45 from the Wifi Bill) presents Record
+    /// Payment with the correct from/to.
+    @MainActor
+    func testSettlementGraphTogglesAndTappingEdgeOpensRecordPayment() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        let bypassButton = app.buttons["DEBUG: Skip Sign In"]
+        XCTAssertTrue(bypassButton.waitForExistence(timeout: 10))
+        bypassButton.tap()
+
+        let groupRow = app.staticTexts["Apartment — SF"]
+        XCTAssertTrue(groupRow.waitForExistence(timeout: 30))
+        groupRow.tap()
+        XCTAssertTrue(app.navigationBars["Apartment — SF"].waitForExistence(timeout: 30))
+
+        let viewSettlementButton = app.buttons["View Settlement"]
+        XCTAssertTrue(viewSettlementButton.waitForExistence(timeout: 30))
+        viewSettlementButton.tap()
+        XCTAssertTrue(app.navigationBars["Balances"].waitForExistence(timeout: 30))
+
+        let simplifiedButton = app.buttons["Simplified"]
+        XCTAssertTrue(simplifiedButton.waitForExistence(timeout: 10))
+        simplifiedButton.tap()
+        let rawButton = app.buttons["Who Owes What"]
+        XCTAssertTrue(rawButton.waitForExistence(timeout: 10))
+        rawButton.tap()
+
+        let graph = app.otherElements["SettlementGraph"]
+        XCTAssertTrue(graph.waitForExistence(timeout: 10))
+        // Two members are laid out directly above/below center, so this edge is a
+        // diametric chord: SettlementGraphView's controlPoint(from:to:center:radii:)
+        // bows it purely leftward by ((radiusX + radiusY) / 2) * 0.55, and the curve's
+        // actual midpoint (t=0.5 on the quad bezier) lands at half that distance left
+        // of center — derive that from the graph's real on-screen size (mirroring
+        // graphRadii's own margins) rather than guessing a fixed fraction.
+        let graphFrame = graph.frame
+        let radiusX = graphFrame.width / 2 - 55
+        let radiusY = graphFrame.height / 2 - 45
+        let controlDistance = ((radiusX + radiusY) / 2) * 0.55
+        let curveXFraction = 0.5 - (0.5 * controlDistance) / graphFrame.width
+        graph.coordinate(withNormalizedOffset: CGVector(dx: curveXFraction, dy: 0.5)).tap()
+
+        XCTAssertTrue(app.navigationBars["Record Payment"].waitForExistence(timeout: 10), "Tapping the edge should present Record Payment")
+        XCTAssertTrue(app.staticTexts["You"].exists, "From should be the current user")
+        XCTAssertTrue(app.staticTexts["Sam Rivera"].exists, "To should be Sam Rivera")
+        let amountField = app.textFields.matching(NSPredicate(format: "value CONTAINS[c] '45'")).firstMatch
+        XCTAssertTrue(amountField.exists, "Amount should be pre-filled with the edge's $45")
+
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.navigationBars["Record Payment"].waitForNonExistence(timeout: 10))
+        XCTAssertTrue(app.navigationBars["Balances"].waitForExistence(timeout: 10), "Cancel should return to the Settlement screen")
+    }
 }
 
 private extension XCUIElement {

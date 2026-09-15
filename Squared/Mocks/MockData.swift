@@ -42,7 +42,28 @@ enum MockData {
         avatarURL: nil
     )
 
-    static let users: [User] = [currentUser, otherUser, thirdUser, fourthUser, fifthUser]
+    static let sixthUser = User(
+        id: "user-6",
+        name: "Riley Thompson",
+        email: "riley@example.com",
+        avatarURL: nil
+    )
+
+    static let seventhUser = User(
+        id: "user-7",
+        name: "Avery Martinez",
+        email: "avery@example.com",
+        avatarURL: nil
+    )
+
+    static let eighthUser = User(
+        id: "user-8",
+        name: "Drew Sullivan",
+        email: "drew@example.com",
+        avatarURL: nil
+    )
+
+    static let users: [User] = [currentUser, otherUser, thirdUser, fourthUser, fifthUser, sixthUser, seventhUser, eighthUser]
 
     static let groups: [Group] = [
         // Five members — exercises the avatar cluster's overflow ("+N") state.
@@ -58,6 +79,17 @@ enum MockData {
             name: "Apartment — SF",
             memberIDs: [currentUser.id, otherUser.id],
             createdAt: Date(timeIntervalSinceNow: -86_400 * 20)
+        ),
+        // Eight members, all sharing expenses with each other — a denser group
+        // than Trip to Lisbon's five.
+        Group(
+            id: "group-3",
+            name: "Ski Trip",
+            memberIDs: [
+                currentUser.id, otherUser.id, thirdUser.id, fourthUser.id,
+                fifthUser.id, sixthUser.id, seventhUser.id, eighthUser.id
+            ],
+            createdAt: Date(timeIntervalSinceNow: -86_400 * 4)
         )
     ]
 
@@ -212,8 +244,96 @@ enum MockData {
                 ExpenseSplit(userID: otherUser.id, amount: 45.00)
             ],
             createdAt: Date(timeIntervalSinceNow: -86_400 * 3)
+        ),
+        // Ski Trip: each expense is paid by a different member and split
+        // equally across all 8, netting out to debts between many pairs.
+        Expense(
+            id: "expense-11",
+            groupID: groups[2].id,
+            title: "Chalet Rental",
+            amount: 160.00,
+            paidByUserID: currentUser.id,
+            splitMethod: .equal,
+            splits: allEightSplits(amountPerPerson: 20.00),
+            createdAt: Date(timeIntervalSinceNow: -86_400 * 4)
+        ),
+        Expense(
+            id: "expense-12",
+            groupID: groups[2].id,
+            title: "Lift Passes",
+            amount: 80.00,
+            paidByUserID: otherUser.id,
+            splitMethod: .equal,
+            splits: allEightSplits(amountPerPerson: 10.00),
+            createdAt: Date(timeIntervalSinceNow: -86_400 * 3.5)
+        ),
+        Expense(
+            id: "expense-13",
+            groupID: groups[2].id,
+            title: "Ski Rentals",
+            amount: 240.00,
+            paidByUserID: thirdUser.id,
+            splitMethod: .equal,
+            splits: allEightSplits(amountPerPerson: 30.00),
+            createdAt: Date(timeIntervalSinceNow: -86_400 * 3)
+        ),
+        Expense(
+            id: "expense-14",
+            groupID: groups[2].id,
+            title: "Groceries",
+            amount: 56.00,
+            paidByUserID: fourthUser.id,
+            splitMethod: .equal,
+            splits: allEightSplits(amountPerPerson: 7.00),
+            createdAt: Date(timeIntervalSinceNow: -86_400 * 2.5)
+        ),
+        Expense(
+            id: "expense-15",
+            groupID: groups[2].id,
+            title: "Dinner Out",
+            amount: 120.00,
+            paidByUserID: fifthUser.id,
+            splitMethod: .equal,
+            splits: allEightSplits(amountPerPerson: 15.00),
+            createdAt: Date(timeIntervalSinceNow: -86_400 * 2)
+        ),
+        Expense(
+            id: "expense-16",
+            groupID: groups[2].id,
+            title: "Hot Tub Rental",
+            amount: 88.00,
+            paidByUserID: sixthUser.id,
+            splitMethod: .equal,
+            splits: allEightSplits(amountPerPerson: 11.00),
+            createdAt: Date(timeIntervalSinceNow: -86_400 * 1.5)
+        ),
+        Expense(
+            id: "expense-17",
+            groupID: groups[2].id,
+            title: "Gas",
+            amount: 64.00,
+            paidByUserID: seventhUser.id,
+            splitMethod: .equal,
+            splits: allEightSplits(amountPerPerson: 8.00),
+            createdAt: Date(timeIntervalSinceNow: -86_400 * 1)
+        ),
+        Expense(
+            id: "expense-18",
+            groupID: groups[2].id,
+            title: "Lodge Dinner",
+            amount: 200.00,
+            paidByUserID: eighthUser.id,
+            splitMethod: .equal,
+            splits: allEightSplits(amountPerPerson: 25.00),
+            createdAt: Date(timeIntervalSinceNow: -86_400 * 0.5)
         )
     ]
+
+    /// One equal split per Ski Trip member, all at the same per-person amount.
+    private static func allEightSplits(amountPerPerson: Decimal) -> [ExpenseSplit] {
+        [currentUser, otherUser, thirdUser, fourthUser, fifthUser, sixthUser, seventhUser, eighthUser]
+            .map { ExpenseSplit(userID: $0.id, amount: amountPerPerson) }
+    }
 
     static let balances: [Balance] = [
         Balance(

@@ -153,8 +153,8 @@ final class AddExpenseViewModel {
 
         switch splitMethod {
         case .equal:
-            let share = (amount / Decimal(participants.count)).rounded(to: 2)
-            return Dictionary(uniqueKeysWithValues: participants.map { ($0, share) })
+            let shares = evenSplit(of: amount, into: participants.count)
+            return Dictionary(uniqueKeysWithValues: zip(participants, shares))
         case .exact:
             return Dictionary(uniqueKeysWithValues: participants.map { ($0, Decimal(string: customAmountText[$0] ?? "") ?? .zero) })
         case .percentage:
@@ -175,16 +175,40 @@ final class AddExpenseViewModel {
         case .equal:
             break
         case .exact:
-            let share = (amount / Decimal(participants.count)).rounded(to: 2)
-            for id in participants {
+            let shares = evenSplit(of: amount, into: participants.count)
+            for (id, share) in zip(participants, shares) {
                 customAmountText[id] = "\(share)"
             }
         case .percentage:
-            let percentage = (Decimal(100) / Decimal(participants.count)).rounded(to: 2)
-            for id in participants {
-                customPercentageText[id] = "\(percentage)"
+            let shares = evenSplit(of: 100, into: participants.count)
+            for (id, share) in zip(participants, shares) {
+                customPercentageText[id] = "\(share)"
             }
         }
+    }
+
+    /// Divides `total` evenly among `count` shares rounded to `scale` decimal
+    /// places, assigning any rounding remainder to the first few shares one unit
+    /// at a time so they always sum back to exactly `total` (e.g. $10.00 / 3
+    /// would otherwise round to $3.33 × 3 = $9.99).
+    private func evenSplit(of total: Decimal, into count: Int, scale: Int = 2) -> [Decimal] {
+        guard count > 0 else { return [] }
+        let base = (total / Decimal(count)).rounded(to: scale)
+        var shares = Array(repeating: base, count: count)
+        var remainder = (total - base * Decimal(count)).rounded(to: scale)
+        let unit = Decimal(sign: .plus, exponent: -scale, significand: 1)
+        var index = 0
+        while remainder != 0 && index < count {
+            if remainder > 0 {
+                shares[index] += unit
+                remainder -= unit
+            } else {
+                shares[index] -= unit
+                remainder += unit
+            }
+            index += 1
+        }
+        return shares
     }
 }
 
