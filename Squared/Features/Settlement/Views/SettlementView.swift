@@ -8,7 +8,9 @@ import SwiftUI
 struct SettlementView: View {
     @State private var viewModel: SettlementViewModel
     @State private var displayMode: SettlementViewModel.DisplayMode = .raw
-    @State private var selectedEdge: SelectedEdge?
+    @State private var optionsEdge: SelectedEdge?
+    @State private var paymentEdge: SelectedEdge?
+    @State private var edgePendingMarkAsPaid: SelectedEdge?
 
     /// Above this many simultaneous edges, no amount of per-edge collision
     /// avoidance keeps the graph legible, so this falls back to a plain list.
@@ -50,7 +52,7 @@ struct SettlementView: View {
                     currentUserID: viewModel.currentUserID,
                     displayName: viewModel.displayName(for:),
                     onSelect: { fromUserID, toUserID, amount in
-                        selectedEdge = SelectedEdge(fromUserID: fromUserID, toUserID: toUserID, amount: amount)
+                        optionsEdge = SelectedEdge(fromUserID: fromUserID, toUserID: toUserID, amount: amount)
                     }
                 )
             } else {
@@ -62,7 +64,7 @@ struct SettlementView: View {
                     displayMode: displayMode,
                     currentUserID: viewModel.currentUserID,
                     onTapEdge: { fromUserID, toUserID, amount in
-                        selectedEdge = SelectedEdge(fromUserID: fromUserID, toUserID: toUserID, amount: amount)
+                        optionsEdge = SelectedEdge(fromUserID: fromUserID, toUserID: toUserID, amount: amount)
                     }
                 )
                 .frame(maxWidth: .infinity)
@@ -73,11 +75,26 @@ struct SettlementView: View {
         .background(Color("AppBackground"))
         .navigationTitle("Balances")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(item: $selectedEdge) { edge in
+        .sheet(item: $optionsEdge, onDismiss: {
+            // The options sheet must fully dismiss before Record Payment can be
+            // presented, or iOS can silently drop the second sheet presentation.
+            if let edge = edgePendingMarkAsPaid {
+                edgePendingMarkAsPaid = nil
+                paymentEdge = edge
+            }
+        }) { edge in
+            SettleUpOptionsView(
+                fromDisplayName: viewModel.displayName(for: edge.fromUserID),
+                onMarkAsPaid: {
+                    edgePendingMarkAsPaid = edge
+                    optionsEdge = nil
+                }
+            )
+        }
+        .sheet(item: $paymentEdge) { edge in
             RecordPaymentView(
                 viewModel: viewModel,
-                fromDisplayName: viewModel.displayName(for: edge.fromUserID),
-                toDisplayName: viewModel.displayName(for: edge.toUserID),
+                members: viewModel.members,
                 fromUserID: edge.fromUserID,
                 toUserID: edge.toUserID,
                 amount: edge.amount

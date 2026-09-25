@@ -152,10 +152,26 @@ struct SettlementGraphView: View {
             )
         }
         .onChange(of: displayMode) { _, newMode in
-            transitionFromEdges = interpolatedEdges(at: Date())
-            transitionToEdges = edgeData(for: newMode)
-            transitionStartDate = Date()
+            beginTransition(to: edgeData(for: newMode))
         }
+        // rawBalances/simplifiedBalances come from AppState (e.g. after recording a
+        // settlement), not from displayMode — SwiftUI reuses this view's @State
+        // across re-renders, so without this the edges would silently stay frozen
+        // at whatever they were when the view first appeared.
+        .onChange(of: rawBalances) { _, newValue in
+            guard displayMode == .raw else { return }
+            beginTransition(to: edgeData(for: newValue))
+        }
+        .onChange(of: simplifiedBalances) { _, newValue in
+            guard displayMode == .simplified else { return }
+            beginTransition(to: edgeData(for: newValue))
+        }
+    }
+
+    private func beginTransition(to newEdges: [EdgeDatum]) {
+        transitionFromEdges = interpolatedEdges(at: Date())
+        transitionToEdges = newEdges
+        transitionStartDate = Date()
     }
 
     // MARK: - Drawing
@@ -451,8 +467,15 @@ struct SettlementGraphView: View {
     /// Static so `init` can compute the starting edge set before `self` (and thus
     /// the instance method above) is fully available.
     private static func edgeData(for mode: SettlementViewModel.DisplayMode, rawBalances: [Balance], simplifiedBalances: [Balance]) -> [EdgeDatum] {
-        let source = mode == .raw ? rawBalances : simplifiedBalances
-        return source.map { balance in
+        edgeData(for: mode == .raw ? rawBalances : simplifiedBalances)
+    }
+
+    private func edgeData(for balances: [Balance]) -> [EdgeDatum] {
+        Self.edgeData(for: balances)
+    }
+
+    private static func edgeData(for balances: [Balance]) -> [EdgeDatum] {
+        balances.map { balance in
             let key = EdgeKey(low: min(balance.fromUserID, balance.toUserID), high: max(balance.fromUserID, balance.toUserID))
             return EdgeDatum(key: key, fromUserID: balance.fromUserID, toUserID: balance.toUserID, amount: balance.amount)
         }

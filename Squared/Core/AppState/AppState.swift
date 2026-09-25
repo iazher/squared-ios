@@ -13,6 +13,7 @@ final class AppState {
     private(set) var users: [User] = []
     private(set) var groups: [Group] = []
     private(set) var expenses: [Expense] = []
+    private(set) var settlements: [Settlement] = []
     private(set) var balances: [Balance] = []
 
     /// True only while the one-time post-sign-in fetch is running.
@@ -60,6 +61,7 @@ final class AppState {
         users = []
         groups = []
         expenses = []
+        settlements = []
         balances = []
     }
 
@@ -90,19 +92,29 @@ final class AppState {
         recomputeBalances()
     }
 
+    func upsert(settlement: Settlement) {
+        if let index = settlements.firstIndex(where: { $0.id == settlement.id }) {
+            settlements[index] = settlement
+        } else {
+            settlements.append(settlement)
+        }
+        recomputeBalances()
+    }
+
     func setGroups(_ groups: [Group]) {
         self.groups = groups
     }
 
     /// TEMPORARY mock-stage substitute for a real balances fetch: nets each
-    /// expense's splits against its payer, pairwise, per group. This is not
-    /// debt simplification (no multi-party reduction) — replace with a real
-    /// fetch once the backend's simplify_debts() endpoint exists.
+    /// expense's splits against its payer, then applies recorded settlements on
+    /// top, pairwise, per group. This is not debt simplification (no multi-party
+    /// reduction) — replace with a real fetch once the backend's
+    /// simplify_debts() endpoint exists.
     func recomputeBalances() {
-        balances = Self.computeBalances(from: expenses)
+        balances = Self.computeBalances(from: expenses, settlements: settlements)
     }
 
-    private static func computeBalances(from expenses: [Expense]) -> [Balance] {
+    private static func computeBalances(from expenses: [Expense], settlements: [Settlement]) -> [Balance] {
         struct PairKey: Hashable {
             let groupID: String
             let lowUserID: String
@@ -122,6 +134,16 @@ final class AppState {
                 let delta = debtor == high ? split.amount : -split.amount
                 net[key, default: .zero] += delta
             }
+        }
+
+        for settlement in settlements where settlement.fromUserID != settlement.toUserID {
+            let low = min(settlement.fromUserID, settlement.toUserID)
+            let high = max(settlement.fromUserID, settlement.toUserID)
+            let key = PairKey(groupID: settlement.groupID, lowUserID: low, highUserID: high)
+            // A settlement pays a debt down, so it moves the net the opposite
+            // direction a same-sized expense-created debt would.
+            let delta = settlement.fromUserID == high ? -settlement.amount : settlement.amount
+            net[key, default: .zero] += delta
         }
 
         return net.compactMap { key, amount in

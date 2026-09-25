@@ -5,43 +5,45 @@
 
 import SwiftUI
 
-/// Presented when tapping a settlement edge; from/to/amount come from that edge.
+/// Presented when tapping a settlement edge; from/to/amount are prefilled from
+/// that edge but stay editable, since this doubles as a general "record a
+/// payment" form.
 struct RecordPaymentView: View {
     @Environment(\.dismiss) private var dismiss
     private let viewModel: SettlementViewModel
-    private let fromDisplayName: String
-    private let toDisplayName: String
-    private let fromUserID: String
-    private let toUserID: String
+    private let members: [SettlementViewModel.Member]
+    @State private var fromUserID: String
+    @State private var toUserID: String
     @State private var amountText: String
 
-    init(viewModel: SettlementViewModel, fromDisplayName: String, toDisplayName: String, fromUserID: String, toUserID: String, amount: Decimal) {
+    init(viewModel: SettlementViewModel, members: [SettlementViewModel.Member], fromUserID: String, toUserID: String, amount: Decimal) {
         self.viewModel = viewModel
-        self.fromDisplayName = fromDisplayName
-        self.toDisplayName = toDisplayName
-        self.fromUserID = fromUserID
-        self.toUserID = toUserID
+        self.members = members
+        _fromUserID = State(initialValue: fromUserID)
+        _toUserID = State(initialValue: toUserID)
         _amountText = State(initialValue: "\(amount)")
     }
 
     var body: some View {
         NavigationStack {
             Form {
-                HStack {
-                    Text("From")
-                    Spacer()
-                    Text(fromDisplayName)
-                        .foregroundStyle(.secondary)
+                Picker("From", selection: $fromUserID) {
+                    ForEach(members) { member in
+                        Text(member.displayName).tag(member.id)
+                    }
                 }
-                HStack {
-                    Text("To")
-                    Spacer()
-                    Text(toDisplayName)
-                        .foregroundStyle(.secondary)
+                Picker("To", selection: $toUserID) {
+                    ForEach(members) { member in
+                        Text(member.displayName).tag(member.id)
+                    }
                 }
                 TextField("Amount", text: $amountText)
                     .keyboardType(.decimalPad)
 
+                if fromUserID == toUserID {
+                    Text("From and To must be different people.")
+                        .foregroundStyle(.red)
+                }
                 if let errorMessage = viewModel.errorMessage {
                     Text(errorMessage)
                         .foregroundStyle(.red)
@@ -71,7 +73,7 @@ struct RecordPaymentView: View {
                             Text("Save")
                         }
                     }
-                    .disabled(viewModel.isRecordingSettlement || Decimal(string: amountText) == nil)
+                    .disabled(viewModel.isRecordingSettlement || Decimal(string: amountText) == nil || fromUserID == toUserID)
                 }
             }
         }

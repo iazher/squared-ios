@@ -345,7 +345,12 @@ final class SquaredUITests: XCTestCase {
         let curveXFraction = 0.5 - (0.5 * controlDistance) / graphFrame.width
         graph.coordinate(withNormalizedOffset: CGVector(dx: curveXFraction, dy: 0.5)).tap()
 
-        XCTAssertTrue(app.navigationBars["Record Payment"].waitForExistence(timeout: 10), "Tapping the edge should present Record Payment")
+        XCTAssertTrue(app.navigationBars["Settle Up"].waitForExistence(timeout: 10), "Tapping the edge should present the settle-up options")
+        XCTAssertTrue(app.buttons["Open Venmo"].exists, "Venmo option should be visible")
+        XCTAssertFalse(app.buttons["Open Venmo"].isEnabled, "Venmo isn't wired up yet, so it should be disabled")
+        app.buttons["Mark as Paid"].tap()
+
+        XCTAssertTrue(app.navigationBars["Record Payment"].waitForExistence(timeout: 10), "Mark as Paid should present Record Payment")
         XCTAssertTrue(app.staticTexts["You"].exists, "From should be the current user")
         XCTAssertTrue(app.staticTexts["Sam Rivera"].exists, "To should be Sam Rivera")
         let amountField = app.textFields.matching(NSPredicate(format: "value CONTAINS[c] '45'")).firstMatch

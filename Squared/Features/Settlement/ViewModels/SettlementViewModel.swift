@@ -98,17 +98,13 @@ final class SettlementViewModel {
         defer { isRecordingSettlement = false }
 
         do {
-            _ = try await settlementService.recordSettlement(
+            let settlement = try await settlementService.recordSettlement(
                 groupID: group.id,
                 fromUserID: fromUserID,
                 toUserID: toUserID,
                 amount: amount
             )
-            // TEMPORARY: balances are derived from expenses only right now (see
-            // AppState), so recording a settlement doesn't move them yet —
-            // recompute anyway so this call site is correct once settlements
-            // factor into the real calculation.
-            appState.recomputeBalances()
+            appState.upsert(settlement: settlement)
             return true
         } catch {
             errorMessage = error.localizedDescription
