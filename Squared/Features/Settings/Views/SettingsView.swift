@@ -9,8 +9,8 @@ struct SettingsView: View {
     @State private var viewModel: SettingsViewModel
     let onSignedOut: () -> Void
 
-    init(appState: AppState, authService: AuthServiceProtocol, settingsService: SettingsServiceProtocol, onSignedOut: @escaping () -> Void) {
-        _viewModel = State(initialValue: SettingsViewModel(appState: appState, authService: authService, settingsService: settingsService))
+    init(appState: AppState, authService: AuthServiceProtocol, settingsService: SettingsServiceProtocol, usersService: UsersServiceProtocol, onSignedOut: @escaping () -> Void) {
+        _viewModel = State(initialValue: SettingsViewModel(appState: appState, authService: authService, settingsService: settingsService, usersService: usersService))
         self.onSignedOut = onSignedOut
     }
 
@@ -19,7 +19,7 @@ struct SettingsView: View {
             Form {
                 Section("Account") {
                     if let user = viewModel.currentUser {
-                        Text(user.name)
+                        Text("Signed in as \(user.name)")
                         Text(user.email)
                             .foregroundStyle(.secondary)
                     }
@@ -29,10 +29,48 @@ struct SettingsView: View {
                 Section("Preferences") {
                     if let preferences = viewModel.preferences {
                         Text("Currency: \(preferences.preferredCurrencyCode)")
-                        Text("Notifications: \(preferences.notificationsEnabled ? "On" : "Off")")
                     }
+                    Toggle("Notifications", isOn: Binding(
+                        get: { viewModel.notificationsEnabled },
+                        set: { viewModel.notificationsEnabled = $0 }
+                    ))
                 }
                 .disabled(viewModel.isLoadingPreferences)
+
+                Section {
+                    TextField("Venmo username (optional)", text: Binding(
+                        get: { viewModel.venmoUsernameText },
+                        set: { viewModel.venmoUsernameText = $0 }
+                    ))
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+
+                    TextField("PayPal username (optional)", text: Binding(
+                        get: { viewModel.paypalUsernameText },
+                        set: { viewModel.paypalUsernameText = $0 }
+                    ))
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+
+                    if viewModel.hasUnsavedPaymentMethodChanges {
+                        Button {
+                            Task {
+                                await viewModel.savePaymentMethods()
+                            }
+                        } label: {
+                            if viewModel.isSavingPaymentMethods {
+                                ProgressView()
+                            } else {
+                                Text("Save")
+                            }
+                        }
+                        .disabled(viewModel.isSavingPaymentMethods)
+                    }
+                } header: {
+                    Text("Payment Methods")
+                } footer: {
+                    Text("Set these so Open Venmo / Open PayPal work in a settle-up whenever you're the one who owes money.")
+                }
 
                 Section {
                     // Spinner reflects this in-flight action, not a data load.

@@ -92,6 +92,14 @@ final class SettlementViewModel {
         return actualName(for: userID)
     }
 
+    func venmoUsername(for userID: String) -> String? {
+        appState.users.first(where: { $0.id == userID })?.venmoUsername
+    }
+
+    func paypalUsername(for userID: String) -> String? {
+        appState.users.first(where: { $0.id == userID })?.paypalUsername
+    }
+
     func recordSettlement(fromUserID: String, toUserID: String, amount: Decimal) async -> Bool {
         isRecordingSettlement = true
         errorMessage = nil

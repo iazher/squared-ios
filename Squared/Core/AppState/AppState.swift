@@ -73,6 +73,9 @@ final class AppState {
         } else {
             users.append(user)
         }
+        if currentUser?.id == user.id {
+            currentUser = user
+        }
     }
 
     func upsert(group: Group) {

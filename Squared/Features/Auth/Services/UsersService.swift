@@ -16,4 +16,10 @@ final class UsersService: UsersServiceProtocol {
         let endpoint = Endpoint(path: "/users")
         return try await apiClient.request(endpoint)
     }
+
+    func updateProfile(_ user: User) async throws -> User {
+        let body = try JSONEncoder().encode(user)
+        let endpoint = Endpoint(path: "/users/me", method: .put, body: body)
+        return try await apiClient.request(endpoint)
+    }
 }

@@ -15,6 +15,13 @@ final class MockAPIClient: APIClient {
             sample = MockData.currentUser
         case (.get, "/users"):
             sample = MockData.users
+        case (.put, "/users/me"):
+            if let body = endpoint.body,
+               let payload = try? JSONDecoder().decode(User.self, from: body) {
+                sample = payload
+            } else {
+                throw NetworkError.invalidResponse
+            }
         case (.post, "/auth/sign-out"):
             sample = EmptyResponse()
         case (.get, "/groups"):

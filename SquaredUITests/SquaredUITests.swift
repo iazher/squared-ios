@@ -360,6 +360,40 @@ final class SquaredUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Record Payment"].waitForNonExistence(timeout: 10))
         XCTAssertTrue(app.navigationBars["Balances"].waitForExistence(timeout: 10), "Cancel should return to the Settlement screen")
     }
+
+    /// Confirms the Settings screen shows the signed-in user and a working
+    /// notifications toggle, and that signing out is a root switch back to Sign
+    /// In (not a push) — signing back in reaches a fresh Groups list again.
+    @MainActor
+    func testSettingsShowsUserAndSignOutReturnsToSignIn() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        let bypassButton = app.buttons["DEBUG: Skip Sign In"]
+        XCTAssertTrue(bypassButton.waitForExistence(timeout: 10))
+        bypassButton.tap()
+
+        let groupsTab = app.tabBars.buttons["Groups"]
+        XCTAssertTrue(groupsTab.waitForExistence(timeout: 30))
+        app.tabBars.buttons["Settings"].tap()
+
+        XCTAssertTrue(app.staticTexts["Signed in as Alex Chen"].waitForExistence(timeout: 10), "Should show the mock signed-in user's name")
+
+        let notificationsToggle = app.switches["Notifications"]
+        XCTAssertTrue(notificationsToggle.waitForExistence(timeout: 10), "Notifications toggle should be present")
+        let initialValue = notificationsToggle.value as? String
+        notificationsToggle.tap()
+        XCTAssertNotEqual(notificationsToggle.value as? String, initialValue, "Tapping the toggle should flip its local state")
+
+        app.buttons["Sign Out"].tap()
+
+        XCTAssertTrue(bypassButton.waitForExistence(timeout: 10), "Signing out should be a root switch back to the Sign In screen")
+        XCTAssertFalse(groupsTab.exists, "The signed-in tab view should be fully replaced, not left underneath")
+
+        bypassButton.tap()
+        XCTAssertTrue(groupsTab.waitForExistence(timeout: 30), "Signing in again should reach a fresh Groups list")
+        XCTAssertTrue(app.staticTexts["Trip to Lisbon"].waitForExistence(timeout: 10), "Mock groups should reappear after signing back in")
+    }
 }
 
 private extension XCUIElement {

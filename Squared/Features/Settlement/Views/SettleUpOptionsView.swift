@@ -7,11 +7,14 @@ import SwiftUI
 
 /// Presented when tapping a settlement edge, before Record Payment — lets the
 /// user jump to Venmo/PayPal to actually send money, or just mark the debt as
-/// paid directly. Venmo/PayPal aren't wired up yet since members don't have a
-/// stored username for either, so those two are disabled placeholders.
+/// paid directly. Venmo/PayPal only become tappable once the "from" member has
+/// a stored username for that service; otherwise they show as disabled.
 struct SettleUpOptionsView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     let fromDisplayName: String
+    let venmoUsername: String?
+    let paypalUsername: String?
     let onMarkAsPaid: () -> Void
 
     var body: some View {
@@ -30,21 +33,8 @@ struct SettleUpOptionsView: View {
                     }
                 }
 
-                Button {
-                    // Disabled until members have a stored Venmo username.
-                } label: {
-                    disabledOptionRow(title: "Open Venmo", systemImage: "arrow.up.forward.app", note: "No Venmo linked for \(fromDisplayName)")
-                }
-                .disabled(true)
-                .accessibilityLabel("Open Venmo")
-
-                Button {
-                    // Disabled until members have a stored PayPal username.
-                } label: {
-                    disabledOptionRow(title: "Open PayPal", systemImage: "arrow.up.forward.app", note: "No PayPal linked for \(fromDisplayName)")
-                }
-                .disabled(true)
-                .accessibilityLabel("Open PayPal")
+                paymentOptionRow(service: "Venmo", username: venmoUsername, urlPrefix: "https://venmo.com/")
+                paymentOptionRow(service: "PayPal", username: paypalUsername, urlPrefix: "https://paypal.me/")
             }
             .navigationTitle("Settle Up")
             .navigationBarTitleDisplayMode(.inline)
@@ -57,6 +47,31 @@ struct SettleUpOptionsView: View {
             }
         }
         .presentationDetents([.medium])
+    }
+
+    @ViewBuilder
+    private func paymentOptionRow(service: String, username: String?, urlPrefix: String) -> some View {
+        let title = "Open \(service)"
+        if let username, !username.isEmpty, let url = paymentURL(prefix: urlPrefix, username: username) {
+            Button {
+                openURL(url)
+            } label: {
+                Label(title, systemImage: "arrow.up.forward.app")
+            }
+        } else {
+            Button {
+                // Disabled until this member has a stored username for this service.
+            } label: {
+                disabledOptionRow(title: title, systemImage: "arrow.up.forward.app", note: "No \(service) linked for \(fromDisplayName)")
+            }
+            .disabled(true)
+            .accessibilityLabel(title)
+        }
+    }
+
+    private func paymentURL(prefix: String, username: String) -> URL? {
+        let encoded = username.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? username
+        return URL(string: prefix + encoded)
     }
 
     /// One opacity over the whole row so icon/title/subtext dim as a single

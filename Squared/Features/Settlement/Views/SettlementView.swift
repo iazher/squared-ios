@@ -85,6 +85,8 @@ struct SettlementView: View {
         }) { edge in
             SettleUpOptionsView(
                 fromDisplayName: viewModel.displayName(for: edge.fromUserID),
+                venmoUsername: viewModel.venmoUsername(for: edge.fromUserID),
+                paypalUsername: viewModel.paypalUsername(for: edge.fromUserID),
                 onMarkAsPaid: {
                     edgePendingMarkAsPaid = edge
                     optionsEdge = nil

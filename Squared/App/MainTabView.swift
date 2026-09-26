@@ -25,6 +25,7 @@ struct MainTabView: View {
                 appState: appState,
                 authService: dependencies.authService,
                 settingsService: dependencies.settingsService,
+                usersService: dependencies.usersService,
                 onSignedOut: onSignedOut
             )
             .tabItem { Label("Settings", systemImage: "gearshape") }
