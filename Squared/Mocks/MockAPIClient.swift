@@ -12,9 +12,9 @@ final class MockAPIClient: APIClient {
 
         switch (endpoint.method, endpoint.path) {
         case (.get, "/auth/me"), (.post, "/auth/sign-in"):
-            sample = MockData.currentUser
+            sample = activeCurrentUser
         case (.get, "/users"):
-            sample = MockData.users
+            sample = activeUsers
         case (.put, "/users/me"):
             if let body = endpoint.body,
                let payload = try? JSONDecoder().decode(User.self, from: body) {
@@ -25,7 +25,7 @@ final class MockAPIClient: APIClient {
         case (.post, "/auth/sign-out"):
             sample = EmptyResponse()
         case (.get, "/groups"):
-            sample = MockData.groups
+            sample = activeGroups
         case (.post, "/groups"):
             if let body = endpoint.body,
                let payload = try? JSONDecoder().decode(GroupCreationPayload.self, from: body) {
@@ -34,7 +34,7 @@ final class MockAPIClient: APIClient {
                 sample = MockData.groups[0]
             }
         case (.get, "/expenses"):
-            sample = MockData.expenses
+            sample = activeExpenses
         case (.post, "/expenses"):
             if let body = endpoint.body,
                let payload = try? JSONDecoder().decode(CreateExpensePayload.self, from: body) {
@@ -51,8 +51,10 @@ final class MockAPIClient: APIClient {
             } else {
                 throw NetworkError.invalidResponse
             }
+        case let (.delete, path) where path.hasPrefix("/expenses/"):
+            sample = EmptyResponse()
         case (.get, "/settlement/balances"):
-            sample = MockData.balances
+            sample = activeBalances
         case (.post, "/settlement/settlements"):
             if let body = endpoint.body,
                let payload = try? JSONDecoder().decode(RecordSettlementPayload.self, from: body) {
@@ -83,6 +85,8 @@ final class MockAPIClient: APIClient {
             } else {
                 throw NetworkError.invalidResponse
             }
+        case let (.delete, path) where path.hasPrefix("/groups/") && path.contains("/members/"):
+            sample = EmptyResponse()
         default:
             throw NetworkError.invalidResponse
         }
@@ -91,6 +95,41 @@ final class MockAPIClient: APIClient {
             throw NetworkError.decodingFailed
         }
         return typed
+    }
+
+    private var activeCurrentUser: User {
+        #if DEBUG
+        if MockScenario.current == .newUser { return NewUserMockData.currentUser }
+        #endif
+        return MockData.currentUser
+    }
+
+    private var activeUsers: [User] {
+        #if DEBUG
+        if MockScenario.current == .newUser { return NewUserMockData.users }
+        #endif
+        return MockData.users
+    }
+
+    private var activeGroups: [Group] {
+        #if DEBUG
+        if MockScenario.current == .newUser { return NewUserMockData.groups }
+        #endif
+        return MockData.groups
+    }
+
+    private var activeExpenses: [Expense] {
+        #if DEBUG
+        if MockScenario.current == .newUser { return NewUserMockData.expenses }
+        #endif
+        return MockData.expenses
+    }
+
+    private var activeBalances: [Balance] {
+        #if DEBUG
+        if MockScenario.current == .newUser { return NewUserMockData.balances }
+        #endif
+        return MockData.balances
     }
 }
 

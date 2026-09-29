@@ -11,6 +11,7 @@ struct GroupDetailView: View {
     @State private var isShowingMembers = false
     @State private var isShowingSettlement = false
     @State private var selectedExpense: Expense?
+    @State private var expensePendingDeletion: Expense?
     private let appState: AppState
     private let group: Group
     private let groupsService: GroupsServiceProtocol
@@ -18,7 +19,7 @@ struct GroupDetailView: View {
     private let settlementService: SettlementServiceProtocol
 
     init(appState: AppState, group: Group, groupsService: GroupsServiceProtocol, expensesService: ExpensesServiceProtocol, settlementService: SettlementServiceProtocol) {
-        _viewModel = State(initialValue: GroupDetailViewModel(appState: appState, group: group))
+        _viewModel = State(initialValue: GroupDetailViewModel(appState: appState, group: group, expensesService: expensesService))
         self.appState = appState
         self.group = group
         self.groupsService = groupsService
@@ -52,10 +53,17 @@ struct GroupDetailView: View {
                     .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 0, trailing: 16))
 
                 if viewModel.expenses.isEmpty {
-                    Text("No expenses yet")
-                        .foregroundStyle(.white.opacity(0.5))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
+                    VStack(spacing: 12) {
+                        Text("No expenses yet")
+                            .foregroundStyle(.white.opacity(0.5))
+                        GradientButton(title: "Add Expense") {
+                            isShowingAddExpense = true
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                 } else {
                     ForEach(viewModel.expenses) { expense in
                         Button {
@@ -67,6 +75,13 @@ struct GroupDetailView: View {
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                expensePendingDeletion = expense
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
                     }
                 }
             }
@@ -97,27 +112,17 @@ struct GroupDetailView: View {
         .navigationDestination(item: $selectedExpense) { expense in
             ExpenseDetailView(appState: appState, expense: expense)
         }
+        .sheet(item: $expensePendingDeletion) { expense in
+            DeleteExpenseConfirmationView(expenseTitle: expense.title) {
+                Task {
+                    await viewModel.deleteExpense(expense)
+                }
+            }
+        }
         // Pinned footer — reserves its own space so the list scrolls independently and stops short of it.
         .safeAreaInset(edge: .bottom) {
-            Button {
+            GradientButton(title: "View Settlement") {
                 isShowingSettlement = true
-            } label: {
-                Text("View Settlement")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.4667, green: 0.3451, blue: 0.8196), // #7758D1
-                                Color(red: 0.9686, green: 0.7961, blue: 0.9922)  // #F7CBFD
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)

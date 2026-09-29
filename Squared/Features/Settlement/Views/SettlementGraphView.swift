@@ -186,7 +186,15 @@ struct SettlementGraphView: View {
         )
 
         let rawEdges: [RawEdge] = interpolatedEdges(at: date).compactMap { edge in
-            guard let from = positions[edge.fromUserID], let to = positions[edge.toUserID] else { return nil }
+            guard let from = positions[edge.fromUserID], let to = positions[edge.toUserID] else {
+                // A balance references a user who isn't in `members` (e.g. a
+                // debt left over after member removal) — the edge just silently
+                // doesn't draw. That's an invariant violation elsewhere (the
+                // remove-member guard should have prevented this), so fail
+                // loudly here in DEBUG rather than let a debt quietly vanish.
+                assertionFailure("Settlement graph dropped an edge (\(edge.fromUserID) -> \(edge.toUserID), $\(edge.amount)): missing node position for a user not in `members`.")
+                return nil
+            }
             let dx = to.x - from.x
             let dy = to.y - from.y
             guard (dx * dx + dy * dy) > 1 else { return nil }

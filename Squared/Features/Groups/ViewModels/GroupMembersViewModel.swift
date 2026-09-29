@@ -11,7 +11,10 @@ import Observation
 @Observable
 final class GroupMembersViewModel {
     private let appState: AppState
+    private let groupsService: GroupsServiceProtocol
     let group: Group
+
+    var errorMessage: String?
 
     struct MemberBalance: Identifiable {
         let id: String
@@ -23,9 +26,10 @@ final class GroupMembersViewModel {
         let hasActivity: Bool
     }
 
-    init(appState: AppState, group: Group) {
+    init(appState: AppState, group: Group, groupsService: GroupsServiceProtocol) {
         self.appState = appState
         self.group = group
+        self.groupsService = groupsService
     }
 
     /// Positive means the member is owed within this group; negative means they owe.
@@ -61,7 +65,7 @@ final class GroupMembersViewModel {
 
     private func netBalance(for userID: String) -> Decimal {
         var total = Decimal.zero
-        for balance in appState.balances where balance.groupID == group.id {
+        for balance in significantBalances(involving: userID) {
             if balance.toUserID == userID {
                 total += balance.amount
             } else if balance.fromUserID == userID {
@@ -69,6 +73,14 @@ final class GroupMembersViewModel {
             }
         }
         return total
+    }
+
+    /// This member's own significant pairwise debts, shared by both the
+    /// displayed net balance and the removal guard below.
+    private func significantBalances(involving userID: String) -> [Balance] {
+        appState.balances.filter {
+            $0.groupID == group.id && $0.isSignificant && ($0.fromUserID == userID || $0.toUserID == userID)
+        }
     }
 
     private func hasActivity(for userID: String) -> Bool {
@@ -81,5 +93,43 @@ final class GroupMembersViewModel {
             }
         }
         return false
+    }
+
+    // MARK: - Member removal
+
+    /// Net-zero isn't enough on its own — a cycle can leave a member's net at
+    /// zero while they still have real, tappable Raw edges with other members,
+    /// which the Settlement graph would otherwise render as owed to nobody
+    /// (edges to a non-member silently don't draw at all).
+    func canRemove(_ member: MemberBalance) -> Bool {
+        significantBalances(involving: member.id).isEmpty
+    }
+
+    func blockedRemovalMessage(for member: MemberBalance) -> String {
+        guard abs(member.netBalance) >= Balance.significantAmountThreshold else {
+            return "\(member.displayName) still has open debts with other members. Settle up before removing them."
+        }
+        let amount = abs(member.netBalance).formatted(currencyCode: "USD")
+        return member.netBalance > 0
+            ? "\(member.displayName) is owed \(amount). Settle up before removing them."
+            : "\(member.displayName) still owes \(amount). Settle up before removing them."
+    }
+
+    func removeMember(_ userID: String) async -> Bool {
+        errorMessage = nil
+        do {
+            try await groupsService.removeMember(groupID: group.id, userID: userID)
+            let updatedGroup = Group(
+                id: currentGroup.id,
+                name: currentGroup.name,
+                memberIDs: currentGroup.memberIDs.filter { $0 != userID },
+                createdAt: currentGroup.createdAt
+            )
+            appState.upsert(group: updatedGroup)
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
     }
 }

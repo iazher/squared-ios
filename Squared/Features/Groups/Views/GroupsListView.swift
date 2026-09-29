@@ -70,7 +70,28 @@ struct GroupsListView: View {
             }
             .overlay {
                 if viewModel.groups.isEmpty {
-                    ContentUnavailableView("No Groups Yet", systemImage: "person.3")
+                    // Not ContentUnavailableView: it expands to fill essentially all
+                    // available height and centers itself within that, which pushes a
+                    // sibling button all the way to the bottom instead of right below
+                    // the description — a plain VStack keeps everything together.
+                    VStack(spacing: 16) {
+                        Image(systemName: "person.3")
+                            .font(.system(size: 48))
+                            .foregroundStyle(.white.opacity(0.3))
+                        Text("No groups yet")
+                            .font(.title2.bold())
+                            .foregroundStyle(.white)
+                        Text("Create a group to start splitting expenses with friends.")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.5))
+                            .multilineTextAlignment(.center)
+                        GradientButton(title: "Create Group") {
+                            isShowingAddGroup = true
+                        }
+                        .padding(.horizontal, 40)
+                        .padding(.top, 8)
+                    }
+                    .padding(.horizontal, 32)
                 }
             }
         }

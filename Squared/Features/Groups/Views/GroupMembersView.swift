@@ -8,12 +8,14 @@ import SwiftUI
 struct GroupMembersView: View {
     @State private var viewModel: GroupMembersViewModel
     @State private var isShowingAddMember = false
+    @State private var memberPendingRemoval: GroupMembersViewModel.MemberBalance?
+    @State private var blockedRemovalMessage: String?
     private let appState: AppState
     private let group: Group
     private let groupsService: GroupsServiceProtocol
 
     init(appState: AppState, group: Group, groupsService: GroupsServiceProtocol) {
-        _viewModel = State(initialValue: GroupMembersViewModel(appState: appState, group: group))
+        _viewModel = State(initialValue: GroupMembersViewModel(appState: appState, group: group, groupsService: groupsService))
         self.appState = appState
         self.group = group
         self.groupsService = groupsService
@@ -26,6 +28,21 @@ struct GroupMembersView: View {
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                     .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        // No "leave group" flow yet, so the current user can't
+                        // remove themselves this way.
+                        if member.id != appState.currentUser?.id {
+                            Button(role: .destructive) {
+                                if viewModel.canRemove(member) {
+                                    memberPendingRemoval = member
+                                } else {
+                                    blockedRemovalMessage = viewModel.blockedRemovalMessage(for: member)
+                                }
+                            } label: {
+                                Label("Remove", systemImage: "person.fill.xmark")
+                            }
+                        }
+                    }
             }
         }
         .listStyle(.plain)
@@ -44,6 +61,40 @@ struct GroupMembersView: View {
         }
         .sheet(isPresented: $isShowingAddMember) {
             AddMemberView(appState: appState, group: group, groupsService: groupsService)
+        }
+        .alert(
+            "Remove \(memberPendingRemoval?.displayName ?? "")?",
+            isPresented: Binding(
+                get: { memberPendingRemoval != nil },
+                set: { isPresented in if !isPresented { memberPendingRemoval = nil } }
+            )
+        ) {
+            Button("Cancel", role: .cancel) {
+                memberPendingRemoval = nil
+            }
+            Button("Remove", role: .destructive) {
+                if let member = memberPendingRemoval {
+                    Task {
+                        await viewModel.removeMember(member.id)
+                    }
+                }
+                memberPendingRemoval = nil
+            }
+        } message: {
+            Text("This can't be undone.")
+        }
+        .alert(
+            "Can't Remove Member",
+            isPresented: Binding(
+                get: { blockedRemovalMessage != nil },
+                set: { isPresented in if !isPresented { blockedRemovalMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {
+                blockedRemovalMessage = nil
+            }
+        } message: {
+            Text(blockedRemovalMessage ?? "")
         }
     }
 }

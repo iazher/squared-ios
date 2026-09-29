@@ -7,4 +7,5 @@ protocol GroupsServiceProtocol {
     func fetchGroups() async throws -> [Group]
     func createGroup(name: String, memberIDs: [String]) async throws -> Group
     func addMember(groupID: String, name: String) async throws -> User
+    func removeMember(groupID: String, userID: String) async throws
 }

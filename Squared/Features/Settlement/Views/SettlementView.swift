@@ -31,20 +31,45 @@ struct SettlementView: View {
         displayMode == .raw ? viewModel.rawBalances : viewModel.simplifiedBalances
     }
 
+    /// Whether EITHER mode has anything to show — a debt cycle (A owes B, B
+    /// owes C, C owes A) can leave every person's net position at exactly
+    /// zero, so Simplified shows nothing even though Raw still has real,
+    /// unsettled per-pair debts. The toggle and the big empty state must key
+    /// off this, not off whichever mode is currently selected, or switching
+    /// to Simplified in that case would falsely claim the group is settled
+    /// and hide the only way back to Raw.
+    private var hasAnyEdges: Bool {
+        !viewModel.rawBalances.isEmpty || !viewModel.simplifiedBalances.isEmpty
+    }
+
     var body: some View {
         VStack(spacing: 16) {
-            Picker("View", selection: $displayMode) {
-                ForEach(SettlementViewModel.DisplayMode.allCases, id: \.self) { mode in
-                    Text(mode.rawValue).tag(mode)
+            if hasAnyEdges {
+                Picker("View", selection: $displayMode) {
+                    ForEach(SettlementViewModel.DisplayMode.allCases, id: \.self) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
                 }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
             }
-            .pickerStyle(.segmented)
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
 
-            if viewModel.rawBalances.isEmpty {
+            if !hasAnyEdges {
                 Spacer()
-                ContentUnavailableView("All Settled Up", systemImage: "checkmark.circle")
+                if viewModel.hasExpenses {
+                    ContentUnavailableView {
+                        Label("Everyone's squared up", systemImage: "checkmark.circle")
+                    } description: {
+                        Text("There are no outstanding debts in this group.")
+                    }
+                } else {
+                    ContentUnavailableView {
+                        Label("No expenses yet", systemImage: "tray")
+                    } description: {
+                        Text("Add an expense to start tracking who owes what.")
+                    }
+                }
                 Spacer()
             } else if currentBalances.count > graphEdgeCountThreshold {
                 SettlementBalanceListView(

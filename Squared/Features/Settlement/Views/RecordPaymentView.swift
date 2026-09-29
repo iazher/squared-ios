@@ -39,6 +39,12 @@ struct RecordPaymentView: View {
                 }
                 TextField("Amount", text: $amountText)
                     .keyboardType(.decimalPad)
+                    .onChange(of: amountText) { _, newValue in
+                        let sanitized = Self.sanitizedAmountText(newValue)
+                        if sanitized != amountText {
+                            amountText = sanitized
+                        }
+                    }
 
                 if fromUserID == toUserID {
                     Text("From and To must be different people.")
@@ -78,5 +84,26 @@ struct RecordPaymentView: View {
             }
         }
         .presentationDetents([.medium])
+    }
+
+    /// Strips anything but digits and a single decimal point, then truncates to
+    /// at most 2 digits after it — currency amounts don't need sub-cent input.
+    private static func sanitizedAmountText(_ text: String) -> String {
+        var seenDecimalPoint = false
+        var result = ""
+        for character in text {
+            if character.isNumber {
+                result.append(character)
+            } else if character == ".", !seenDecimalPoint {
+                seenDecimalPoint = true
+                result.append(character)
+            }
+        }
+        if let dotIndex = result.firstIndex(of: ".") {
+            let afterDot = result.index(after: dotIndex)
+            let maxEnd = result.index(afterDot, offsetBy: 2, limitedBy: result.endIndex) ?? result.endIndex
+            result = String(result[result.startIndex..<maxEnd])
+        }
+        return result
     }
 }

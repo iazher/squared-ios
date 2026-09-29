@@ -49,12 +49,15 @@ final class AddExpenseViewModel {
         self.appState = appState
         self.group = group
         self.expensesService = expensesService
-        self.payerID = appState.currentUser?.id ?? group.memberIDs.first ?? ""
-        self.selectedParticipantIDs = Set(group.memberIDs)
+        // Inlined rather than via `currentGroup`: computed properties on self
+        // aren't callable yet — stored properties are still being set.
+        let liveMemberIDs = (appState.groups.first(where: { $0.id == group.id }) ?? group).memberIDs
+        self.payerID = appState.currentUser?.id ?? liveMemberIDs.first ?? ""
+        self.selectedParticipantIDs = Set(liveMemberIDs)
     }
 
     var members: [Member] {
-        group.memberIDs.map { Member(id: $0, displayName: displayName(for: $0)) }
+        currentGroup.memberIDs.map { Member(id: $0, displayName: displayName(for: $0)) }
     }
 
     func isParticipantSelected(_ userID: String) -> Bool {
@@ -72,7 +75,7 @@ final class AddExpenseViewModel {
     /// Live preview of each selected participant's share, in member order.
     var splitPreview: [SplitPreviewRow] {
         let shares = computeShares()
-        return group.memberIDs
+        return currentGroup.memberIDs
             .filter { selectedParticipantIDs.contains($0) }
             .map { SplitPreviewRow(id: $0, displayName: displayName(for: $0), amount: shares[$0] ?? .zero) }
     }
@@ -80,7 +83,7 @@ final class AddExpenseViewModel {
     /// Non-nil when the current split inputs don't add up — keeps Save disabled until they do.
     var splitValidationMessage: String? {
         guard let amount, !selectedParticipantIDs.isEmpty else { return nil }
-        let participants = group.memberIDs.filter { selectedParticipantIDs.contains($0) }
+        let participants = currentGroup.memberIDs.filter { selectedParticipantIDs.contains($0) }
 
         switch splitMethod {
         case .equal:
@@ -114,7 +117,7 @@ final class AddExpenseViewModel {
         defer { isSaving = false }
 
         let shares = computeShares()
-        let splits = group.memberIDs
+        let splits = currentGroup.memberIDs
             .filter { selectedParticipantIDs.contains($0) }
             .map { ExpenseSplit(userID: $0, amount: shares[$0] ?? .zero) }
 
@@ -139,6 +142,13 @@ final class AddExpenseViewModel {
         Decimal(string: amountText)
     }
 
+    /// `group` is captured at sheet-presentation time, so a member added after
+    /// that (e.g. via Add Member) wouldn't otherwise show up here — read the
+    /// live copy instead, matching every other Group-scoped view model.
+    private var currentGroup: Group {
+        appState.groups.first(where: { $0.id == group.id }) ?? group
+    }
+
     private func displayName(for userID: String) -> String {
         if userID == appState.currentUser?.id {
             return "You"
@@ -148,7 +158,7 @@ final class AddExpenseViewModel {
 
     private func computeShares() -> [String: Decimal] {
         guard let amount else { return [:] }
-        let participants = group.memberIDs.filter { selectedParticipantIDs.contains($0) }
+        let participants = currentGroup.memberIDs.filter { selectedParticipantIDs.contains($0) }
         guard !participants.isEmpty else { return [:] }
 
         switch splitMethod {
@@ -169,7 +179,7 @@ final class AddExpenseViewModel {
     /// set changes, so the preview never starts from a blank/mismatched state.
     private func prefillCustomInputsIfNeeded() {
         guard let amount, !selectedParticipantIDs.isEmpty else { return }
-        let participants = group.memberIDs.filter { selectedParticipantIDs.contains($0) }
+        let participants = currentGroup.memberIDs.filter { selectedParticipantIDs.contains($0) }
 
         switch splitMethod {
         case .equal:

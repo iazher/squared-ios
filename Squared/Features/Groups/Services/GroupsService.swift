@@ -30,6 +30,11 @@ final class GroupsService: GroupsServiceProtocol {
         let endpoint = Endpoint(path: "/groups/\(groupID)/members", method: .post, body: body)
         return try await apiClient.request(endpoint)
     }
+
+    func removeMember(groupID: String, userID: String) async throws {
+        let endpoint = Endpoint(path: "/groups/\(groupID)/members/\(userID)", method: .delete)
+        let _: EmptyResponse = try await apiClient.request(endpoint)
+    }
 }
 
 private struct CreateGroupRequest: Encodable {

@@ -10,11 +10,15 @@ import Observation
 @Observable
 final class GroupDetailViewModel {
     private let appState: AppState
+    private let expensesService: ExpensesServiceProtocol
     let group: Group
 
-    init(appState: AppState, group: Group) {
+    var errorMessage: String?
+
+    init(appState: AppState, group: Group, expensesService: ExpensesServiceProtocol) {
         self.appState = appState
         self.group = group
+        self.expensesService = expensesService
     }
 
     struct MemberAvatarInfo: Identifiable {
@@ -41,6 +45,18 @@ final class GroupDetailViewModel {
 
     func payerName(for expense: Expense) -> String {
         displayName(for: expense.paidByUserID)
+    }
+
+    func deleteExpense(_ expense: Expense) async -> Bool {
+        errorMessage = nil
+        do {
+            try await expensesService.deleteExpense(id: expense.id)
+            appState.remove(expenseID: expense.id)
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
     }
 
     /// `group` is captured at push time; member edits land in `AppState`, so read the live copy.

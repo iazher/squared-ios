@@ -45,8 +45,15 @@ final class SettlementViewModel {
     }
 
     /// Raw pairwise debts, already netted per pair — "who owes what" as it stands.
+    /// The significance filter is applied here, once, so nothing downstream —
+    /// graph, list fallback, or the empty-state check — has to re-check it.
     var rawBalances: [Balance] {
-        appState.balances.filter { $0.groupID == group.id }
+        appState.balances.filter { $0.groupID == group.id && $0.isSignificant }
+    }
+
+    /// Distinguishes "nothing to settle yet" from "settled up" in the empty state.
+    var hasExpenses: Bool {
+        appState.expenses.contains { $0.groupID == group.id }
     }
 
     /// Minimum-transaction settle-up: nets each member's overall position, then

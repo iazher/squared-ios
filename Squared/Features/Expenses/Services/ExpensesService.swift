@@ -30,6 +30,11 @@ final class ExpensesService: ExpensesServiceProtocol {
         let endpoint = Endpoint(path: "/expenses", method: .post, body: body)
         return try await apiClient.request(endpoint)
     }
+
+    func deleteExpense(id: String) async throws {
+        let endpoint = Endpoint(path: "/expenses/\(id)", method: .delete)
+        let _: EmptyResponse = try await apiClient.request(endpoint)
+    }
 }
 
 private struct CreateExpenseRequest: Encodable {

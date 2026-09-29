@@ -95,6 +95,11 @@ final class AppState {
         recomputeBalances()
     }
 
+    func remove(expenseID: String) {
+        expenses.removeAll { $0.id == expenseID }
+        recomputeBalances()
+    }
+
     func upsert(settlement: Settlement) {
         if let index = settlements.firstIndex(where: { $0.id == settlement.id }) {
             settlements[index] = settlement

@@ -12,4 +12,13 @@ struct Balance: Identifiable, Codable, Hashable {
     let fromUserID: String
     let toUserID: String
     let amount: Decimal
+
+    /// Below this, an amount is residue (e.g. from a manually-edited payment
+    /// that didn't exactly match a debt) rather than a real outstanding debt —
+    /// shared by anywhere that needs to decide whether a balance still counts.
+    static let significantAmountThreshold: Decimal = 0.01
+
+    var isSignificant: Bool {
+        abs(amount) >= Self.significantAmountThreshold
+    }
 }
