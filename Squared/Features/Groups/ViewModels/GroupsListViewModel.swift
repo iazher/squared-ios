@@ -12,6 +12,9 @@ final class GroupsListViewModel {
     private let appState: AppState
     private let groupsService: GroupsServiceProtocol
 
+    /// Non-blocking — a failed refresh keeps whatever `AppState` already has.
+    var refreshErrorMessage: String?
+
     init(appState: AppState, groupsService: GroupsServiceProtocol) {
         self.appState = appState
         self.groupsService = groupsService
@@ -49,8 +52,12 @@ final class GroupsListViewModel {
     func refresh() async {
         try? await Task.sleep(nanoseconds: 700_000_000)
 
-        if let groups = try? await groupsService.fetchGroups() {
+        do {
+            let groups = try await groupsService.fetchGroups()
             appState.setGroups(groups)
+            refreshErrorMessage = nil
+        } catch {
+            refreshErrorMessage = friendlyErrorMessage(error)
         }
         // Balances are derived from expenses (temporary mock-stage calculation);
         // refreshing groups doesn't change expenses, but recompute for consistency.

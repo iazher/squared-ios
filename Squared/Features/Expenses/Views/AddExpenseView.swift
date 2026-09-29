@@ -70,29 +70,32 @@ struct AddExpenseView: View {
                             .foregroundStyle(.red)
                     }
                 }
-
+            }
+            .safeAreaInset(edge: .top, spacing: 0) {
                 if let errorMessage = viewModel.errorMessage {
-                    Text(errorMessage)
-                        .foregroundStyle(.red)
+                    ErrorBanner(
+                        message: errorMessage,
+                        background: Color(uiColor: .secondarySystemGroupedBackground),
+                        onRetry: performSave
+                    ) {
+                        viewModel.errorMessage = nil
+                    }
+                    .padding(.top, 8)
                 }
             }
+            .animation(.default, value: viewModel.errorMessage)
             .navigationTitle("Add Expense")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
+                        viewModel.errorMessage = nil
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     // Spinner reflects this in-flight save action — not a data load.
-                    Button {
-                        Task {
-                            if await viewModel.save() {
-                                dismiss()
-                            }
-                        }
-                    } label: {
+                    Button(action: performSave) {
                         if viewModel.isSaving {
                             ProgressView()
                         } else {
@@ -101,6 +104,14 @@ struct AddExpenseView: View {
                     }
                     .disabled(!viewModel.canSave || viewModel.isSaving)
                 }
+            }
+        }
+    }
+
+    private func performSave() {
+        Task {
+            if await viewModel.save() {
+                dismiss()
             }
         }
     }

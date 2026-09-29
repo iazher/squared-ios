@@ -114,9 +114,8 @@ struct GroupDetailView: View {
         }
         .sheet(item: $expensePendingDeletion) { expense in
             DeleteExpenseConfirmationView(expenseTitle: expense.title) {
-                Task {
-                    await viewModel.deleteExpense(expense)
-                }
+                let succeeded = await viewModel.deleteExpense(expense)
+                return succeeded ? nil : viewModel.errorMessage
             }
         }
         // Pinned footer — reserves its own space so the list scrolls independently and stops short of it.

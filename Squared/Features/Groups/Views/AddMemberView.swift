@@ -17,29 +17,32 @@ struct AddMemberView: View {
         NavigationStack {
             Form {
                 TextField("Member name", text: $viewModel.name)
-
+            }
+            .safeAreaInset(edge: .top, spacing: 0) {
                 if let errorMessage = viewModel.errorMessage {
-                    Text(errorMessage)
-                        .foregroundStyle(.red)
+                    ErrorBanner(
+                        message: errorMessage,
+                        background: Color(uiColor: .secondarySystemGroupedBackground),
+                        onRetry: performAdd
+                    ) {
+                        viewModel.errorMessage = nil
+                    }
+                    .padding(.top, 8)
                 }
             }
+            .animation(.default, value: viewModel.errorMessage)
             .navigationTitle("Add Member")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
+                        viewModel.errorMessage = nil
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     // Spinner reflects this in-flight save action — not a data load.
-                    Button {
-                        Task {
-                            if await viewModel.addMember() {
-                                dismiss()
-                            }
-                        }
-                    } label: {
+                    Button(action: performAdd) {
                         if viewModel.isAdding {
                             ProgressView()
                         } else {
@@ -51,5 +54,13 @@ struct AddMemberView: View {
             }
         }
         .presentationDetents([.medium])
+    }
+
+    private func performAdd() {
+        Task {
+            if await viewModel.addMember() {
+                dismiss()
+            }
+        }
     }
 }

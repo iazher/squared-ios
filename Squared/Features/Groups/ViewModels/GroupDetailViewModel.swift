@@ -54,7 +54,7 @@ final class GroupDetailViewModel {
             appState.remove(expenseID: expense.id)
             return true
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = friendlyErrorMessage(error)
             return false
         }
     }

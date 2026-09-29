@@ -62,26 +62,11 @@ struct GroupMembersView: View {
         .sheet(isPresented: $isShowingAddMember) {
             AddMemberView(appState: appState, group: group, groupsService: groupsService)
         }
-        .alert(
-            "Remove \(memberPendingRemoval?.displayName ?? "")?",
-            isPresented: Binding(
-                get: { memberPendingRemoval != nil },
-                set: { isPresented in if !isPresented { memberPendingRemoval = nil } }
-            )
-        ) {
-            Button("Cancel", role: .cancel) {
-                memberPendingRemoval = nil
+        .sheet(item: $memberPendingRemoval) { member in
+            RemoveMemberConfirmationView(memberName: member.displayName) {
+                let succeeded = await viewModel.removeMember(member.id)
+                return succeeded ? nil : viewModel.errorMessage
             }
-            Button("Remove", role: .destructive) {
-                if let member = memberPendingRemoval {
-                    Task {
-                        await viewModel.removeMember(member.id)
-                    }
-                }
-                memberPendingRemoval = nil
-            }
-        } message: {
-            Text("This can't be undone.")
         }
         .alert(
             "Can't Remove Member",

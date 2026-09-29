@@ -35,7 +35,7 @@ final class SignInViewModel {
             // Free dev teams can't provision Sign In with Apple; continue with mock data.
             return MockData.currentUser
             #else
-            errorMessage = error.localizedDescription
+            errorMessage = friendlyErrorMessage(error)
             return nil
             #endif
 
@@ -56,7 +56,7 @@ final class SignInViewModel {
                     fullName: credential.fullName
                 )
             } catch {
-                errorMessage = error.localizedDescription
+                errorMessage = friendlyErrorMessage(error)
                 return nil
             }
         }

@@ -66,6 +66,12 @@ struct SettingsView: View {
                         }
                         .disabled(viewModel.isSavingPaymentMethods)
                     }
+
+                    if let errorMessage = viewModel.errorMessage {
+                        Text(errorMessage)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
                 } header: {
                     Text("Payment Methods")
                 } footer: {

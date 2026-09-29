@@ -122,7 +122,7 @@ final class SettlementViewModel {
             appState.upsert(settlement: settlement)
             return true
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = friendlyErrorMessage(error)
             return false
         }
     }

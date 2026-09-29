@@ -17,29 +17,32 @@ struct AddGroupView: View {
         NavigationStack {
             Form {
                 TextField("Group name", text: $viewModel.name)
-
+            }
+            .safeAreaInset(edge: .top, spacing: 0) {
                 if let errorMessage = viewModel.errorMessage {
-                    Text(errorMessage)
-                        .foregroundStyle(.red)
+                    ErrorBanner(
+                        message: errorMessage,
+                        background: Color(uiColor: .secondarySystemGroupedBackground),
+                        onRetry: performCreate
+                    ) {
+                        viewModel.errorMessage = nil
+                    }
+                    .padding(.top, 8)
                 }
             }
+            .animation(.default, value: viewModel.errorMessage)
             .navigationTitle("New Group")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
+                        viewModel.errorMessage = nil
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     // Spinner reflects this in-flight save action — not a data load.
-                    Button {
-                        Task {
-                            if await viewModel.createGroup() {
-                                dismiss()
-                            }
-                        }
-                    } label: {
+                    Button(action: performCreate) {
                         if viewModel.isCreating {
                             ProgressView()
                         } else {
@@ -51,5 +54,13 @@ struct AddGroupView: View {
             }
         }
         .presentationDetents([.medium])
+    }
+
+    private func performCreate() {
+        Task {
+            if await viewModel.createGroup() {
+                dismiss()
+            }
+        }
     }
 }

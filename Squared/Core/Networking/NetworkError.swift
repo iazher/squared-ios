@@ -26,4 +26,21 @@ enum NetworkError: Error, LocalizedError {
             return error.localizedDescription
         }
     }
+
+    /// Text safe to show a user — distinct from `errorDescription`, which can
+    /// leak technical detail (e.g. `.underlying`'s wrapped error).
+    var userFacingMessage: String {
+        switch self {
+        case .invalidURL, .invalidResponse, .decodingFailed:
+            return "Something went wrong. Please try again."
+        case .requestFailed, .underlying:
+            return "Couldn't reach the server."
+        }
+    }
+}
+
+/// The one place a caught error becomes user-facing text — call sites should
+/// never show `error.localizedDescription` directly.
+func friendlyErrorMessage(_ error: Error) -> String {
+    (error as? NetworkError)?.userFacingMessage ?? "Something went wrong. Please try again."
 }

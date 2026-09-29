@@ -1,29 +1,28 @@
 //
-//  DeleteExpenseConfirmationView.swift
+//  RemoveMemberConfirmationView.swift
 //  Squared
 //
 
 import SwiftUI
 
-/// Presented when swiping to delete an expense, before it's actually removed —
-/// same sheet style as `SettleUpOptionsView`, since deleting changes everyone's
-/// balances and shouldn't happen from a single accidental tap.
-struct DeleteExpenseConfirmationView: View {
+/// Presented when swiping to remove an already-settled-up member, before
+/// they're actually removed — same sheet style as `DeleteExpenseConfirmationView`.
+struct RemoveMemberConfirmationView: View {
     @Environment(\.dismiss) private var dismiss
-    let expenseTitle: String
+    let memberName: String
     /// Returns nil on success, or a user-facing message on failure.
-    let onDelete: () async -> String?
+    let onRemove: () async -> String?
 
-    @State private var isDeleting = false
+    @State private var isRemoving = false
     @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    Text("Delete \"\(expenseTitle)\"?")
+                    Text("Remove \(memberName)?")
                         .foregroundStyle(.white)
-                    Text("This will change everyone's balances.")
+                    Text("This can't be undone.")
                         .font(.caption)
                         .foregroundStyle(.white.opacity(0.7))
                     if let errorMessage {
@@ -35,10 +34,10 @@ struct DeleteExpenseConfirmationView: View {
 
                 Button(role: .destructive) {
                     Task {
-                        isDeleting = true
+                        isRemoving = true
                         errorMessage = nil
-                        let failure = await onDelete()
-                        isDeleting = false
+                        let failure = await onRemove()
+                        isRemoving = false
                         if let failure {
                             errorMessage = failure
                         } else {
@@ -47,26 +46,26 @@ struct DeleteExpenseConfirmationView: View {
                     }
                 } label: {
                     HStack {
-                        if isDeleting {
+                        if isRemoving {
                             ProgressView()
                         }
-                        Text("Delete Expense")
+                        Text("Remove Member")
                     }
                 }
-                .disabled(isDeleting)
+                .disabled(isRemoving)
             }
-            .navigationTitle("Delete Expense")
+            .navigationTitle("Remove Member")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
                         dismiss()
                     }
-                    .disabled(isDeleting)
+                    .disabled(isRemoving)
                 }
             }
         }
-        .interactiveDismissDisabled(isDeleting)
+        .interactiveDismissDisabled(isRemoving)
         .presentationDetents([.medium])
     }
 }

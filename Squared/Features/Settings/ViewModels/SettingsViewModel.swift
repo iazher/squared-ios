@@ -76,7 +76,7 @@ final class SettingsViewModel {
             savedVenmoUsernameText = trimmedVenmo
             savedPaypalUsernameText = trimmedPaypal
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = friendlyErrorMessage(error)
         }
     }
 
@@ -90,7 +90,7 @@ final class SettingsViewModel {
             preferences = fetched
             notificationsEnabled = fetched.notificationsEnabled
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = friendlyErrorMessage(error)
         }
     }
 
@@ -103,7 +103,7 @@ final class SettingsViewModel {
             try await authService.signOut()
             appState.reset()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = friendlyErrorMessage(error)
         }
     }
 }

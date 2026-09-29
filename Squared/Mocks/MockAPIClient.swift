@@ -8,6 +8,12 @@ import Foundation
 /// Stands in for `URLSessionAPIClient` before the real backend exists.
 final class MockAPIClient: APIClient {
     func request<T: Decodable>(_ endpoint: Endpoint) async throws -> T {
+        #if DEBUG
+        if MockFailures.shouldThrow {
+            throw NetworkError.requestFailed(statusCode: 500)
+        }
+        #endif
+
         let sample: Any
 
         switch (endpoint.method, endpoint.path) {

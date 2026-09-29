@@ -128,7 +128,7 @@ final class GroupMembersViewModel {
             appState.upsert(group: updatedGroup)
             return true
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = friendlyErrorMessage(error)
             return false
         }
     }

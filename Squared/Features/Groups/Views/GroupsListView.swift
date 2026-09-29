@@ -68,6 +68,17 @@ struct GroupsListView: View {
             .refreshable {
                 await viewModel.refresh()
             }
+            .safeAreaInset(edge: .top) {
+                if let message = viewModel.refreshErrorMessage {
+                    ErrorBanner(message: message) {
+                        Task { await viewModel.refresh() }
+                    } onDismiss: {
+                        viewModel.refreshErrorMessage = nil
+                    }
+                    .padding(.top, 8)
+                }
+            }
+            .animation(.default, value: viewModel.refreshErrorMessage)
             .overlay {
                 if viewModel.groups.isEmpty {
                     // Not ContentUnavailableView: it expands to fill essentially all

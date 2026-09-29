@@ -40,7 +40,7 @@ final class AddGroupViewModel {
             appState.upsert(group: group)
             return true
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = friendlyErrorMessage(error)
             return false
         }
     }

@@ -32,6 +32,8 @@ struct RootView: View {
             SignInView(authService: dependencies.authService, onSignedIn: handleSignedIn)
         case .loading:
             LoadingView()
+        case .loadingFailed(let message):
+            InitialFetchErrorView(message: message, onRetry: retryInitialFetch)
         case .signedIn:
             MainTabView(appState: appState, dependencies: dependencies, onSignedOut: handleSignedOut)
         }
@@ -40,8 +42,23 @@ struct RootView: View {
     private func handleSignedIn(_ user: User) {
         flowState = .loading
         Task {
-            await appState.performInitialFetch()
+            await attemptInitialFetch()
+        }
+    }
+
+    private func retryInitialFetch() {
+        flowState = .loading
+        Task {
+            await attemptInitialFetch()
+        }
+    }
+
+    private func attemptInitialFetch() async {
+        do {
+            try await appState.performInitialFetch()
             flowState = .signedIn
+        } catch {
+            flowState = .loadingFailed(friendlyErrorMessage(error))
         }
     }
 

@@ -38,20 +38,26 @@ final class AppState {
 
     // MARK: - Initial fetch
 
-    /// Called once by `RootView` after a successful sign-in.
-    func performInitialFetch() async {
+    /// Called once by `RootView` after a successful sign-in. Throws (instead of
+    /// silently defaulting to empty data) so `RootView` can show a retry state.
+    func performInitialFetch() async throws {
         isPerformingInitialFetch = true
-        defer { isPerformingInitialFetch = false }
+        defer {
+            isPerformingInitialFetch = false
+            #if DEBUG
+            MockFailures.hasCompletedInitialFetch = true
+            #endif
+        }
 
-        async let fetchedUser = fetchCurrentUser()
-        async let fetchedUsers = fetchUsers()
-        async let fetchedGroups = fetchGroups()
-        async let fetchedExpenses = fetchExpenses()
+        async let fetchedUser = authService.fetchCurrentUser()
+        async let fetchedUsers = usersService.fetchUsers()
+        async let fetchedGroups = groupsService.fetchGroups()
+        async let fetchedExpenses = expensesService.fetchExpenses()
 
-        currentUser = await fetchedUser
-        users = await fetchedUsers
-        groups = await fetchedGroups
-        expenses = await fetchedExpenses
+        currentUser = try await fetchedUser
+        users = try await fetchedUsers
+        groups = try await fetchedGroups
+        expenses = try await fetchedExpenses
         recomputeBalances()
     }
 
@@ -164,24 +170,4 @@ final class AppState {
         }
     }
 
-    // MARK: - Placeholder fetches
-    // TODO: these currently just delegate to the injected Services. Fill in
-    // any additional composition/error-handling logic as the real backend
-    // contract is defined.
-
-    private func fetchCurrentUser() async -> User? {
-        try? await authService.fetchCurrentUser()
-    }
-
-    private func fetchUsers() async -> [User] {
-        (try? await usersService.fetchUsers()) ?? []
-    }
-
-    private func fetchGroups() async -> [Group] {
-        (try? await groupsService.fetchGroups()) ?? []
-    }
-
-    private func fetchExpenses() async -> [Expense] {
-        (try? await expensesService.fetchExpenses()) ?? []
-    }
 }

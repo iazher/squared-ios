@@ -50,29 +50,32 @@ struct RecordPaymentView: View {
                     Text("From and To must be different people.")
                         .foregroundStyle(.red)
                 }
+            }
+            .safeAreaInset(edge: .top, spacing: 0) {
                 if let errorMessage = viewModel.errorMessage {
-                    Text(errorMessage)
-                        .foregroundStyle(.red)
+                    ErrorBanner(
+                        message: errorMessage,
+                        background: Color(uiColor: .secondarySystemGroupedBackground),
+                        onRetry: performSave
+                    ) {
+                        viewModel.errorMessage = nil
+                    }
+                    .padding(.top, 8)
                 }
             }
+            .animation(.default, value: viewModel.errorMessage)
             .navigationTitle("Record Payment")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
+                        viewModel.errorMessage = nil
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     // Spinner reflects this in-flight save action — not a data load.
-                    Button {
-                        Task {
-                            guard let amount = Decimal(string: amountText) else { return }
-                            if await viewModel.recordSettlement(fromUserID: fromUserID, toUserID: toUserID, amount: amount) {
-                                dismiss()
-                            }
-                        }
-                    } label: {
+                    Button(action: performSave) {
                         if viewModel.isRecordingSettlement {
                             ProgressView()
                         } else {
@@ -84,6 +87,21 @@ struct RecordPaymentView: View {
             }
         }
         .presentationDetents([.medium])
+        // `viewModel` is owned by the presenting `SettlementView`, not recreated
+        // per sheet — without this, a failure left over from a previous payment
+        // would show its stale banner the instant this sheet reopens.
+        .onAppear {
+            viewModel.errorMessage = nil
+        }
+    }
+
+    private func performSave() {
+        guard let amount = Decimal(string: amountText) else { return }
+        Task {
+            if await viewModel.recordSettlement(fromUserID: fromUserID, toUserID: toUserID, amount: amount) {
+                dismiss()
+            }
+        }
     }
 
     /// Strips anything but digits and a single decimal point, then truncates to

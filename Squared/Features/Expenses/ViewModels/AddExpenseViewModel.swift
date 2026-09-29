@@ -133,7 +133,7 @@ final class AddExpenseViewModel {
             appState.upsert(expense: expense)
             return true
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = friendlyErrorMessage(error)
             return false
         }
     }
